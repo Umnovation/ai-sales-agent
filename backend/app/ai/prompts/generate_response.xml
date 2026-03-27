@@ -33,9 +33,13 @@
     </knowledge_base>
 
     <instructions>
-        Generate your next message to the client. Follow the step task instructions precisely.
+        Generate your next message to the client. Follow the step task instructions while
+        also addressing the client's questions naturally.
+
+        If the client asks a question, answer it first using the knowledge_base context
+        when relevant, then steer the conversation towards the step's task.
+
         Keep your response concise (2-3 sentences maximum).
         Be natural and conversational. Do not mention that you are an AI unless directly asked.
-        Always work towards completing the step's task and meeting the completion criteria.
     </instructions>
 </prompt>

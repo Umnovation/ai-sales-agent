@@ -40,6 +40,16 @@ export interface ContextUpdate {
   readonly is_active?: boolean;
 }
 
+export interface ModelInfo {
+  readonly id: string;
+  readonly name: string;
+}
+
+export interface AvailableModelsResponse {
+  readonly chat_models: readonly ModelInfo[];
+  readonly embedding_models: readonly ModelInfo[];
+}
+
 export interface DocumentInfo {
   readonly id: number;
   readonly filename: string;

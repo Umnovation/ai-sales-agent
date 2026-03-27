@@ -37,7 +37,7 @@ async def _process_ai_response_async(chat_id: int, message_id: int) -> None:
     from app.chat.service import save_message
     from app.chat.ws_manager import ws_manager
     from app.database import async_session_factory
-    from app.flow.engine import process_message
+    from app.flow.engine import ProcessResult, process_message
 
     log = logger.bind(chat_id=chat_id, message_id=message_id)
     log.info("processing_ai_response")
@@ -56,33 +56,21 @@ async def _process_ai_response_async(chat_id: int, message_id: int) -> None:
                 log.error("message_not_found")
                 return
 
-            # Optionally retrieve RAG context
-            rag_context: str = ""
+            # Run FSM engine (RAG retrieval happens inside process_message)
             try:
-                from app.rag.service import retrieve_relevant_chunks
-
-                chunks: list[str] = await retrieve_relevant_chunks(
-                    db, ai_provider, user_message.content, limit=3
-                )
-                if chunks:
-                    rag_context = "\n\n".join(chunks)
-            except Exception:
-                log.warning("rag_retrieval_failed", exc_info=True)
-
-            # Run FSM engine
-            try:
-                response: str | None = await process_message(
-                    db, ai_provider, chat_id, user_message.content, rag_context
+                proc_result: ProcessResult = await process_message(
+                    db, ai_provider, chat_id, user_message.content
                 )
             except Exception as exc:
                 log.error("engine_processing_failed", error=str(exc), exc_info=True)
                 raise AIProviderError(str(exc)) from exc
 
-            if response is None:
+            if proc_result.response is None:
                 log.info("no_response_generated")
                 return
 
             # Save bot response
+            response: str = proc_result.response
             bot_message: Message = await save_message(db, chat_id, response, sender_type="bot")
 
             log.info("bot_response_saved", bot_message_id=bot_message.id)

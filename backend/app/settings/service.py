@@ -1,11 +1,65 @@
 from __future__ import annotations
 
 from fastapi import HTTPException
+from openai import AsyncOpenAI
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.settings.models import CompanySettings, Context
-from app.settings.schemas import CompanySettingsUpdate, ContextCreate, ContextUpdate
+from app.settings.schemas import (
+    AvailableModelsResponse,
+    CompanySettingsUpdate,
+    ContextCreate,
+    ContextUpdate,
+    ModelInfo,
+)
+
+CHAT_MODEL_PREFIXES: tuple[str, ...] = (
+    "gpt-5",
+    "gpt-4",
+    "gpt-3.5",
+    "o1",
+    "o3",
+    "o4",
+    "chatgpt",
+)
+EMBEDDING_MODEL_PREFIXES: tuple[str, ...] = ("text-embedding",)
+EXCLUDED_SUFFIXES: tuple[str, ...] = (
+    "-realtime",
+    "-audio",
+    "-search",
+    "-similarity",
+    "-code",
+)
+
+
+async def fetch_available_models(api_key: str) -> AvailableModelsResponse:
+    """Fetch available models from OpenAI API and filter into chat/embedding."""
+    client: AsyncOpenAI = AsyncOpenAI(api_key=api_key)
+    response = await client.models.list()
+
+    chat_models: list[ModelInfo] = []
+    embedding_models: list[ModelInfo] = []
+
+    for model in response.data:
+        model_id: str = model.id
+        lower_id: str = model_id.lower()
+
+        if any(lower_id.endswith(suf) for suf in EXCLUDED_SUFFIXES):
+            continue
+
+        if any(lower_id.startswith(p) for p in CHAT_MODEL_PREFIXES):
+            chat_models.append(ModelInfo(id=model_id, name=model_id))
+        elif any(lower_id.startswith(p) for p in EMBEDDING_MODEL_PREFIXES):
+            embedding_models.append(ModelInfo(id=model_id, name=model_id))
+
+    chat_models.sort(key=lambda m: m.id, reverse=True)
+    embedding_models.sort(key=lambda m: m.id, reverse=True)
+
+    return AvailableModelsResponse(
+        chat_models=chat_models,
+        embedding_models=embedding_models,
+    )
 
 
 async def get_settings(db: AsyncSession) -> CompanySettings:

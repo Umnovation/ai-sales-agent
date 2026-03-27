@@ -145,13 +145,13 @@ async def retrieve_relevant_chunks(
     query_embeddings: list[list[float]] = await embedder.embed([query])
     query_embedding: list[float] = query_embeddings[0]
 
-    # pgvector cosine similarity search
+    # pgvector cosine similarity search (explicit cast to vector type)
     result = await db.execute(
         text(
             """
             SELECT content
             FROM document_chunks
-            ORDER BY embedding <=> :embedding
+            ORDER BY embedding <=> cast(:embedding AS vector)
             LIMIT :limit
             """
         ).bindparams(

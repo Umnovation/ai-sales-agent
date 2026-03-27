@@ -66,6 +66,18 @@ export function SettingsPage(): React.ReactElement {
     [],
   );
 
+  const handleEditContext = useCallback(
+    async (id: number, text: string): Promise<void> => {
+      const response = await settingsApi.updateContext(id, { text });
+      if (response.data) {
+        setContexts((prev) =>
+          prev.map((c) => (c.id === id ? response.data! : c)),
+        );
+      }
+    },
+    [],
+  );
+
   const handleDeleteContext = useCallback(async (id: number): Promise<void> => {
     await settingsApi.deleteContext(id);
     setContexts((prev) => prev.filter((c) => c.id !== id));
@@ -92,7 +104,7 @@ export function SettingsPage(): React.ReactElement {
   }
 
   return (
-    <div className="p-8">
+    <div className="mx-auto max-w-3xl p-8">
       <h1 className="mb-6 text-2xl font-semibold text-[var(--app-font-primary)]">
         Settings
       </h1>
@@ -123,6 +135,7 @@ export function SettingsPage(): React.ReactElement {
         <ContextList
           contexts={contexts}
           onAdd={handleAddContext}
+          onEdit={handleEditContext}
           onDelete={handleDeleteContext}
         />
       )}

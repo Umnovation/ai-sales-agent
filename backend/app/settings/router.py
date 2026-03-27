@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from openai import APIConnectionError, AuthenticationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
@@ -8,11 +9,13 @@ from app.common.schemas import ApiResponse
 from app.dependencies import get_current_user, get_db
 from app.settings import service as settings_service
 from app.settings.schemas import (
+    AvailableModelsResponse,
     CompanySettingsResponse,
     CompanySettingsUpdate,
     ContextCreate,
     ContextResponse,
     ContextUpdate,
+    FetchModelsRequest,
 )
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
@@ -56,6 +59,30 @@ async def update_settings(
         data=_to_response(settings),
         message="Settings updated successfully",
     )
+
+
+@router.post("/models")
+async def fetch_models(
+    payload: FetchModelsRequest,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+) -> ApiResponse[AvailableModelsResponse]:
+    api_key: str | None = payload.api_key
+    if not api_key:
+        settings = await settings_service.get_settings(db)
+        api_key = settings.ai_api_key
+    if not api_key:
+        raise HTTPException(
+            status_code=400,
+            detail="No API key provided and no key is configured in settings.",
+        )
+    try:
+        result: AvailableModelsResponse = await settings_service.fetch_available_models(api_key)
+    except AuthenticationError:
+        raise HTTPException(status_code=401, detail="Invalid API key.") from None
+    except APIConnectionError:
+        raise HTTPException(status_code=502, detail="Could not connect to OpenAI API.") from None
+    return ApiResponse.ok(data=result)
 
 
 @router.get("/contexts")

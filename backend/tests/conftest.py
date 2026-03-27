@@ -1,28 +1,25 @@
 """Test fixtures for backend tests."""
 from __future__ import annotations
 
+import os
+
+# Override database URL BEFORE importing app modules.
+# Without this, database.py creates an engine pointing to PostgreSQL (Docker-only host).
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
+
 from collections.abc import AsyncGenerator
-from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.provider import AIProvider
 from app.ai.schemas import CompletionResult, TransitionResult
-from app.database import Base, get_db
-from app.dependencies import get_ai_provider
+from app.database import Base, async_session_factory, engine
+from app.dependencies import get_ai_provider, get_db
 from app.main import app
-
-# Use SQLite for tests (in-memory)
-TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
-
-test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
-test_session_factory = async_sessionmaker(
-    test_engine, class_=AsyncSession, expire_on_commit=False
-)
 
 
 class MockAIProvider:
@@ -74,13 +71,13 @@ class MockAIProvider:
 @pytest_asyncio.fixture
 async def db() -> AsyncGenerator[AsyncSession, None]:
     """Create test database tables and provide a session."""
-    async with test_engine.begin() as conn:
+    async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    async with test_session_factory() as session:
+    async with async_session_factory() as session:
         yield session
 
-    async with test_engine.begin() as conn:
+    async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 
 

@@ -50,3 +50,17 @@ class ContextUpdate(BaseModel):
     type: Literal["rule", "restriction"] | None = None
     text: str | None = None
     is_active: bool | None = None
+
+
+class ModelInfo(BaseModel):
+    id: str
+    name: str
+
+
+class AvailableModelsResponse(BaseModel):
+    chat_models: list[ModelInfo]
+    embedding_models: list[ModelInfo]
+
+
+class FetchModelsRequest(BaseModel):
+    api_key: str | None = None

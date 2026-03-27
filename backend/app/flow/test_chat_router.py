@@ -16,7 +16,7 @@ from app.chat.models import Chat, Message
 from app.chat.schemas import ChatResponse, MessageResponse
 from app.common.schemas import ApiResponse
 from app.dependencies import get_ai_provider, get_current_user, get_db
-from app.flow.engine import process_message
+from app.flow.engine import ProcessResult, process_message
 
 router = APIRouter(prefix="/api/flow/test-chat", tags=["test-chat"])
 
@@ -72,14 +72,23 @@ async def send_test_message(
     await db.flush()
 
     # Process synchronously (no Celery)
-    response: str | None = await process_message(db, ai_provider, chat_id, payload.content)
+    proc_result: ProcessResult = await process_message(db, ai_provider, chat_id, payload.content)
+
+    # Save debug events as system messages (only in test chat)
+    for event in proc_result.debug_events:
+        db.add(Message(
+            chat_id=chat_id,
+            sender_type="system",
+            content=event,
+            message_type="debug",
+        ))
 
     # Save bot response
-    if response is not None:
+    if proc_result.response is not None:
         bot_message = Message(
             chat_id=chat_id,
             sender_type="bot",
-            content=response,
+            content=proc_result.response,
             message_type="text",
         )
         db.add(bot_message)
@@ -95,7 +104,7 @@ async def send_test_message(
     return ApiResponse.ok(
         data=TestChatResponse(
             chat_id=chat_id,
-            bot_response=response,
+            bot_response=proc_result.response,
             messages=[MessageResponse.model_validate(m) for m in messages],
         ),
     )

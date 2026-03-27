@@ -5,6 +5,8 @@ Handles the full cycle: acceptance criteria → resolve step → execute → eva
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
+
 import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,9 +17,18 @@ from app.ai.provider import AIProvider
 from app.ai.schemas import SCRIPT_SWITCH_MIN_CONFIDENCE, CompletionResult, TransitionResult
 from app.chat.models import Chat, ChatFlowStepAttempt, Message
 from app.flow.models import Flow, FlowScript, FlowScriptStep
+from app.rag.service import retrieve_relevant_chunks
 from app.settings.models import CompanySettings, Context
 
 logger: structlog.stdlib.BoundLogger = structlog.get_logger()
+
+
+@dataclass
+class ProcessResult:
+    """Result of processing a message through the FSM engine."""
+
+    response: str | None = None
+    debug_events: list[str] = field(default_factory=list)
 
 
 async def check_acceptance_criteria(
@@ -93,7 +104,8 @@ async def resolve_active_step(
         if not attempt.is_finished:
             return step
 
-    return None  # All steps finished
+    # All steps finished — loop on the last step
+    return steps[-1] if steps else None
 
 
 async def execute_step(
@@ -212,23 +224,24 @@ async def process_message(
     ai_provider: AIProvider,
     chat_id: int,
     user_content: str,
-    rag_context: str = "",
-) -> str | None:
+) -> ProcessResult:
     """Full message processing cycle with transactional integrity.
 
-    Returns the bot's response text, or None if bot is disabled.
+    Returns ProcessResult with the bot's response and debug events.
     """
+    debug: list[str] = []
+
     # Lock chat row to prevent race conditions
     result = await db.execute(select(Chat).where(Chat.id == chat_id).with_for_update())
     chat: Chat | None = result.scalar_one_or_none()
 
     if chat is None:
         logger.error("chat_not_found", chat_id=chat_id)
-        return None
+        return ProcessResult(debug_events=["Chat not found"])
 
     if not chat.is_controlled_by_bot:
         logger.info("bot_disabled_skipping", chat_id=chat_id)
-        return None
+        return ProcessResult(debug_events=["Bot disabled, skipping"])
 
     log = logger.bind(chat_id=chat_id)
 
@@ -240,7 +253,7 @@ async def process_message(
 
     if flow is None or not flow.is_active:
         log.info("no_active_flow")
-        return None
+        return ProcessResult(debug_events=["No active flow"])
 
     # Set starting script if not set
     if chat.flow_script_id is None:
@@ -249,6 +262,7 @@ async def process_message(
             starting = flow.scripts[0]
         if starting is not None:
             chat.flow_script_id = starting.id
+            debug.append(f"Started script: {starting.name}")
 
     # Build message history
     msg_result = await db.execute(
@@ -273,9 +287,18 @@ async def process_message(
         ai_provider, flow, chat, message_history
     )
     if transition is not None and transition.selected_script_id is not None:
-        chat.flow_script_id = transition.selected_script_id
+        # Find script name for debug
+        target_script: FlowScript | None = next(
+            (s for s in flow.scripts if s.id == transition.selected_script_id), None
+        )
+        target_name: str = target_script.name if target_script else str(transition.selected_script_id)
 
-        # Add system message about transition
+        chat.flow_script_id = transition.selected_script_id
+        debug.append(
+            f"Script transition → {target_name} "
+            f"(confidence: {transition.confidence:.0%}, reason: {transition.reason})"
+        )
+
         system_msg = Message(
             chat_id=chat_id,
             sender_type="system",
@@ -289,7 +312,8 @@ async def process_message(
 
     if step is None:
         log.info("all_steps_completed")
-        return None
+        debug.append("All steps completed — no response generated")
+        return ProcessResult(debug_events=debug)
 
     log = log.bind(step_id=step.id, step_title=step.title)
 
@@ -297,7 +321,71 @@ async def process_message(
     attempt: ChatFlowStepAttempt = await _get_or_create_attempt(db, chat_id, step.id)
     attempt.attempts += 1
 
-    # 3. Load settings & contexts
+    debug.append(f"Step: {step.title} (attempt {attempt.attempts}/{step.max_attempts})")
+
+    # ── Phase 1: EVALUATE previous turn ──────────────────────────────
+    # If bot already responded on this step (attempts > 1), evaluate whether
+    # the user's new message satisfies the completion criteria.
+    if attempt.attempts > 1:
+        completion: CompletionResult = await evaluate_completion(
+            ai_provider, step, message_history
+        )
+
+        log.info(
+            "step_evaluated",
+            is_finished=completion.is_step_finished,
+            finish_type=completion.finish_type,
+            reason=completion.reason,
+        )
+        debug.append(
+            f"Eval: finished={completion.is_step_finished}, "
+            f"type={completion.finish_type}, reason={completion.reason}"
+        )
+
+        should_advance: bool = False
+        finish_type: str = "fail"
+
+        if completion.is_step_finished:
+            should_advance = True
+            finish_type = completion.finish_type or "success"
+        elif step.max_attempts != -1 and attempt.attempts > step.max_attempts:
+            should_advance = True
+            finish_type = "fail"
+            log.info("max_attempts_exceeded", max_attempts=step.max_attempts)
+            debug.append(f"Max attempts exceeded ({step.max_attempts})")
+
+        if should_advance:
+            attempt.is_finished = True
+            attempt.finish_type = finish_type
+            attempt.ai_result = completion.model_dump()
+
+            next_step: FlowScriptStep | None = await route_next_step(
+                db, chat, step, finish_type
+            )
+            if next_step is not None:
+                log.info(
+                    "step_routed",
+                    from_step_id=step.id,
+                    to_step_id=next_step.id,
+                    finish_type=finish_type,
+                )
+                debug.append(f"Routed → {next_step.title} ({finish_type})")
+
+            # Re-resolve active step after routing
+            step = await resolve_active_step(db, chat)
+            if step is None:
+                log.info("all_steps_completed")
+                debug.append("All steps completed — no response generated")
+                await db.flush()
+                return ProcessResult(debug_events=debug)
+
+            log = log.bind(step_id=step.id, step_title=step.title)
+            attempt = await _get_or_create_attempt(db, chat_id, step.id)
+            attempt.attempts += 1
+            debug.append(f"Now on step: {step.title}")
+
+    # ── Phase 2: EXECUTE current step ────────────────────────────────
+    # Load settings & contexts
     settings_result = await db.execute(select(CompanySettings).limit(1))
     company_settings: CompanySettings | None = settings_result.scalar_one_or_none()
     if company_settings is None:
@@ -314,54 +402,27 @@ async def process_message(
     )
     step = step_result.scalar_one()
 
-    # 4. Execute step (generate response)
+    # Retrieve RAG context (in savepoint so failures don't break the main transaction)
+    rag_context: str = ""
+    try:
+        async with db.begin_nested():
+            chunks: list[str] = await retrieve_relevant_chunks(db, ai_provider, user_content)
+            if chunks:
+                rag_context = "\n\n".join(chunks)
+                debug.append(f"RAG: {len(chunks)} chunks retrieved")
+    except Exception:
+        log.warning("rag_retrieval_failed", exc_info=True)
+        debug.append("RAG: retrieval failed")
+
+    # Generate response
     log.info("step_executing", attempt=attempt.attempts)
     response: str = await execute_step(
         ai_provider, step, message_history, company_settings, contexts, rag_context
     )
 
-    # Add bot message to history for completion check
-    message_history.append({"role": "assistant", "content": response})
-
-    # 5. Evaluate completion
-    completion: CompletionResult = await evaluate_completion(ai_provider, step, message_history)
-
-    log.info(
-        "step_evaluated",
-        is_finished=completion.is_step_finished,
-        finish_type=completion.finish_type,
-        reason=completion.reason,
-    )
-
-    # 6. Update state
-    should_advance: bool = False
-    finish_type: str = "fail"
-
-    if completion.is_step_finished:
-        should_advance = True
-        finish_type = completion.finish_type or "success"
-    elif step.max_attempts != -1 and attempt.attempts >= step.max_attempts:
-        should_advance = True
-        finish_type = "fail"
-        log.info("max_attempts_exceeded", max_attempts=step.max_attempts)
-
-    if should_advance:
-        attempt.is_finished = True
-        attempt.finish_type = finish_type
-        attempt.ai_result = completion.model_dump()
-
-        next_step: FlowScriptStep | None = await route_next_step(db, chat, step, finish_type)
-        if next_step is not None:
-            log.info(
-                "step_routed",
-                from_step_id=step.id,
-                to_step_id=next_step.id,
-                finish_type=finish_type,
-            )
-
     await db.flush()
 
-    return response
+    return ProcessResult(response=response, debug_events=debug)
 
 
 async def _get_or_create_attempt(

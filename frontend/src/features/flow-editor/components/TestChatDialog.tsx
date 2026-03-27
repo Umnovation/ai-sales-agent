@@ -131,25 +131,33 @@ export function TestChatDialog({
           ) : (
             <div className="flex flex-col gap-3">
               {messages
-                .filter((m) => m.message_type === "text")
-                .map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex ${
-                      msg.sender_type === "visitor" ? "justify-start" : "justify-end"
-                    }`}
-                  >
+                .filter((m) => m.message_type === "text" || m.message_type === "debug")
+                .map((msg) =>
+                  msg.message_type === "debug" ? (
+                    <div key={msg.id} className="flex justify-center">
+                      <span className="max-w-[90%] text-center text-[11px] leading-tight text-[var(--app-font-muted)]">
+                        {msg.content}
+                      </span>
+                    </div>
+                  ) : (
                     <div
-                      className={`max-w-[75%] rounded-xl px-3.5 py-2.5 text-sm ${
-                        msg.sender_type === "visitor"
-                          ? "bg-[var(--app-chat-visitor-bg)] text-[var(--app-font-primary)]"
-                          : "bg-[var(--app-chat-bot-bg)] text-white"
+                      key={msg.id}
+                      className={`flex ${
+                        msg.sender_type === "visitor" ? "justify-start" : "justify-end"
                       }`}
                     >
-                      {msg.content}
+                      <div
+                        className={`max-w-[75%] rounded-xl px-3.5 py-2.5 text-sm ${
+                          msg.sender_type === "visitor"
+                            ? "bg-[var(--app-chat-visitor-bg)] text-[var(--app-font-primary)]"
+                            : "bg-[var(--app-chat-bot-bg)] text-white"
+                        }`}
+                      >
+                        {msg.content}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ),
+                )}
               {sending && (
                 <div className="flex justify-end">
                   <div className="flex items-center gap-2 rounded-xl bg-[var(--app-chat-bot-bg)] px-3.5 py-2.5 text-sm text-white">

@@ -2,6 +2,7 @@ import { apiClient } from "@/api/client";
 import type { ApiResponse } from "@/api/types/common";
 import type {
   AnalyticsSummary,
+  AvailableModelsResponse,
   CompanySettings,
   CompanySettingsUpdate,
   Context,
@@ -22,6 +23,21 @@ export async function updateSettings(
 ): Promise<ApiResponse<CompanySettings>> {
   const { data } = await apiClient.put<ApiResponse<CompanySettings>>(
     "/settings",
+    payload,
+  );
+  return data;
+}
+
+// Models
+export async function fetchModels(
+  apiKey?: string,
+): Promise<ApiResponse<AvailableModelsResponse>> {
+  const payload: { api_key?: string } = {};
+  if (apiKey) {
+    payload.api_key = apiKey;
+  }
+  const { data } = await apiClient.post<ApiResponse<AvailableModelsResponse>>(
+    "/settings/models",
     payload,
   );
   return data;

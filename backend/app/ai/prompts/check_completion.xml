@@ -20,5 +20,9 @@
 
         Be strict but fair. The criteria must be clearly met, not just partially addressed.
         If the client has not yet provided the required information, the step is NOT finished.
+
+        IMPORTANT: If the completion criteria is empty, "нет", "no", "none", "No specific criteria"
+        or otherwise indicates that no criteria is defined — the step is NEVER finished.
+        Return is_step_finished=false. The step should continue indefinitely.
     </instructions>
 </prompt>
