@@ -78,8 +78,12 @@ select = [
     "UP",   # pyupgrade
     "B",    # flake8-bugbear
     "SIM",  # flake8-simplify
-    "TCH",  # flake8-type-checking
     "RUF",  # ruff-specific
+]
+ignore = [
+    "B008",   # Depends() in defaults — standard FastAPI pattern
+    "UP046",  # Generic[T] subclass — Pydantic requires this syntax
+    "SIM105", # contextlib.suppress — explicit try/except is clearer
 ]
 
 [tool.ruff.lint.isort]

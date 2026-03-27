@@ -1,4 +1,5 @@
 """Channel registry for looking up channel implementations by name."""
+
 from __future__ import annotations
 
 from app.channel.base import Channel

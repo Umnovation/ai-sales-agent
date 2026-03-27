@@ -2,6 +2,7 @@
 
 Handles the full cycle: acceptance criteria → resolve step → execute → evaluate → route.
 """
+
 from __future__ import annotations
 
 import structlog
@@ -11,7 +12,7 @@ from sqlalchemy.orm import selectinload
 
 from app.ai.prompts.loader import load_prompt
 from app.ai.provider import AIProvider
-from app.ai.schemas import CompletionResult, TransitionResult, SCRIPT_SWITCH_MIN_CONFIDENCE
+from app.ai.schemas import SCRIPT_SWITCH_MIN_CONFIDENCE, CompletionResult, TransitionResult
 from app.chat.models import Chat, ChatFlowStepAttempt, Message
 from app.flow.models import Flow, FlowScript, FlowScriptStep
 from app.settings.models import CompanySettings, Context
@@ -31,23 +32,24 @@ async def check_acceptance_criteria(
     Returns TransitionResult if a transition should happen, None otherwise.
     """
     candidates: list[FlowScript] = [
-        s for s in flow.scripts
-        if not s.is_starting_script
-        and s.transition_criteria
-        and s.id != chat.flow_script_id
+        s
+        for s in flow.scripts
+        if not s.is_starting_script and s.transition_criteria and s.id != chat.flow_script_id
     ]
 
     if not candidates:
         return None
 
     scripts_text: str = "\n".join(
-        f"- Script ID {s.id} ({s.name}): {s.transition_criteria}"
-        for s in candidates
+        f"- Script ID {s.id} ({s.name}): {s.transition_criteria}" for s in candidates
     )
 
-    prompt: str = load_prompt("check_transition", {
-        "scripts_with_criteria": scripts_text,
-    })
+    prompt: str = load_prompt(
+        "check_transition",
+        {
+            "scripts_with_criteria": scripts_text,
+        },
+    )
 
     # Use only last 12 messages for context (matching Dialogex behavior)
     recent_messages: list[dict[str, str]] = message_history[-12:]
@@ -103,26 +105,31 @@ async def execute_step(
     rag_context: str = "",
 ) -> str:
     """Generate AI response for the current step."""
-    rules: str = "\n".join(
-        f"- {c.text}" for c in contexts if c.type == "rule" and c.is_active
-    ) or "No specific rules."
+    rules: str = (
+        "\n".join(f"- {c.text}" for c in contexts if c.type == "rule" and c.is_active)
+        or "No specific rules."
+    )
 
-    restrictions: str = "\n".join(
-        f"- {c.text}" for c in contexts if c.type == "restriction" and c.is_active
-    ) or "No specific restrictions."
+    restrictions: str = (
+        "\n".join(f"- {c.text}" for c in contexts if c.type == "restriction" and c.is_active)
+        or "No specific restrictions."
+    )
 
-    prompt: str = load_prompt("generate_response", {
-        "company_name": company_settings.company_name,
-        "company_description": company_settings.company_description or "",
-        "script_name": step.script.name if step.script else "",
-        "script_description": step.script.description or "" if step.script else "",
-        "step_title": step.title,
-        "step_task": step.task,
-        "completion_criteria": step.completion_criteria or "No specific criteria.",
-        "rules": rules,
-        "restrictions": restrictions,
-        "rag_context": rag_context or "No additional knowledge base context.",
-    })
+    prompt: str = load_prompt(
+        "generate_response",
+        {
+            "company_name": company_settings.company_name,
+            "company_description": company_settings.company_description or "",
+            "script_name": step.script.name if step.script else "",
+            "script_description": step.script.description or "" if step.script else "",
+            "step_title": step.title,
+            "step_task": step.task,
+            "completion_criteria": step.completion_criteria or "No specific criteria.",
+            "rules": rules,
+            "restrictions": restrictions,
+            "rag_context": rag_context or "No additional knowledge base context.",
+        },
+    )
 
     response: str = await ai_provider.generate(
         messages=message_history,
@@ -138,11 +145,14 @@ async def evaluate_completion(
     message_history: list[dict[str, str]],
 ) -> CompletionResult:
     """Evaluate whether the current step's completion criteria is met."""
-    prompt: str = load_prompt("check_completion", {
-        "step_title": step.title,
-        "step_task": step.task,
-        "completion_criteria": step.completion_criteria or "No specific criteria defined.",
-    })
+    prompt: str = load_prompt(
+        "check_completion",
+        {
+            "step_title": step.title,
+            "step_task": step.task,
+            "completion_criteria": step.completion_criteria or "No specific criteria defined.",
+        },
+    )
 
     result: CompletionResult = await ai_provider.generate_structured(
         messages=message_history,
@@ -209,11 +219,7 @@ async def process_message(
     Returns the bot's response text, or None if bot is disabled.
     """
     # Lock chat row to prevent race conditions
-    result = await db.execute(
-        select(Chat)
-        .where(Chat.id == chat_id)
-        .with_for_update()
-    )
+    result = await db.execute(select(Chat).where(Chat.id == chat_id).with_for_update())
     chat: Chat | None = result.scalar_one_or_none()
 
     if chat is None:
@@ -228,9 +234,7 @@ async def process_message(
 
     # Load flow with scripts
     flow_result = await db.execute(
-        select(Flow)
-        .options(selectinload(Flow.scripts).selectinload(FlowScript.steps))
-        .limit(1)
+        select(Flow).options(selectinload(Flow.scripts).selectinload(FlowScript.steps)).limit(1)
     )
     flow: Flow | None = flow_result.scalar_one_or_none()
 
@@ -240,9 +244,7 @@ async def process_message(
 
     # Set starting script if not set
     if chat.flow_script_id is None:
-        starting: FlowScript | None = next(
-            (s for s in flow.scripts if s.is_starting_script), None
-        )
+        starting: FlowScript | None = next((s for s in flow.scripts if s.is_starting_script), None)
         if starting is None and flow.scripts:
             starting = flow.scripts[0]
         if starting is not None:
@@ -322,9 +324,7 @@ async def process_message(
     message_history.append({"role": "assistant", "content": response})
 
     # 5. Evaluate completion
-    completion: CompletionResult = await evaluate_completion(
-        ai_provider, step, message_history
-    )
+    completion: CompletionResult = await evaluate_completion(ai_provider, step, message_history)
 
     log.info(
         "step_evaluated",
@@ -350,9 +350,7 @@ async def process_message(
         attempt.finish_type = finish_type
         attempt.ai_result = completion.model_dump()
 
-        next_step: FlowScriptStep | None = await route_next_step(
-            db, chat, step, finish_type
-        )
+        next_step: FlowScriptStep | None = await route_next_step(db, chat, step, finish_type)
         if next_step is not None:
             log.info(
                 "step_routed",

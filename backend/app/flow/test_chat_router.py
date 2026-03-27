@@ -2,13 +2,13 @@
 
 Test chats run synchronously (no Celery) and are marked with is_test=True.
 """
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.ai.provider import AIProvider
 from app.auth.models import User
@@ -56,9 +56,7 @@ async def send_test_message(
     ai_provider: AIProvider = Depends(get_ai_provider),
 ) -> ApiResponse[TestChatResponse]:
     # Verify it's a test chat
-    result = await db.execute(
-        select(Chat).where(Chat.id == chat_id, Chat.is_test.is_(True))
-    )
+    result = await db.execute(select(Chat).where(Chat.id == chat_id, Chat.is_test.is_(True)))
     chat: Chat | None = result.scalar_one_or_none()
     if chat is None:
         raise HTTPException(status_code=404, detail="Test chat not found")
@@ -74,9 +72,7 @@ async def send_test_message(
     await db.flush()
 
     # Process synchronously (no Celery)
-    response: str | None = await process_message(
-        db, ai_provider, chat_id, payload.content
-    )
+    response: str | None = await process_message(db, ai_provider, chat_id, payload.content)
 
     # Save bot response
     if response is not None:
@@ -92,9 +88,7 @@ async def send_test_message(
 
     # Reload messages
     msg_result = await db.execute(
-        select(Message)
-        .where(Message.chat_id == chat_id)
-        .order_by(Message.created_at)
+        select(Message).where(Message.chat_id == chat_id).order_by(Message.created_at)
     )
     messages: list[Message] = list(msg_result.scalars().all())
 
@@ -113,9 +107,7 @@ async def delete_test_chat(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
 ) -> ApiResponse[None]:
-    result = await db.execute(
-        select(Chat).where(Chat.id == chat_id, Chat.is_test.is_(True))
-    )
+    result = await db.execute(select(Chat).where(Chat.id == chat_id, Chat.is_test.is_(True)))
     chat: Chat | None = result.scalar_one_or_none()
     if chat is None:
         raise HTTPException(status_code=404, detail="Test chat not found")

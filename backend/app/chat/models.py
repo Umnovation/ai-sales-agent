@@ -31,9 +31,7 @@ class Chat(Base):
     is_controlled_by_bot: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     termination_reason: Mapped[str | None] = mapped_column(String(50), nullable=True)
     is_test: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    metadata_: Mapped[dict[str, object] | None] = mapped_column(
-        "metadata", JSON, nullable=True
-    )
+    metadata_: Mapped[dict[str, object] | None] = mapped_column("metadata", JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -57,18 +55,14 @@ class Chat(Base):
         cascade="all, delete-orphan",
     )
 
-    __table_args__ = (
-        Index("idx_chats_updated_at", "updated_at"),
-    )
+    __table_args__ = (Index("idx_chats_updated_at", "updated_at"),)
 
 
 class Message(Base):
     __tablename__ = "messages"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    chat_id: Mapped[int] = mapped_column(
-        ForeignKey("chats.id", ondelete="CASCADE"), nullable=False
-    )
+    chat_id: Mapped[int] = mapped_column(ForeignKey("chats.id", ondelete="CASCADE"), nullable=False)
     sender_type: Mapped[str] = mapped_column(
         String(20), nullable=False
     )  # "bot" | "visitor" | "user" | "system"
@@ -76,9 +70,7 @@ class Message(Base):
     message_type: Mapped[str] = mapped_column(
         String(20), nullable=False, default="text"
     )  # "text" | "system_event"
-    metadata_: Mapped[dict[str, object] | None] = mapped_column(
-        "metadata", JSON, nullable=True
-    )
+    metadata_: Mapped[dict[str, object] | None] = mapped_column("metadata", JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -88,18 +80,14 @@ class Message(Base):
 
     chat: Mapped[Chat] = relationship("Chat", back_populates="messages")
 
-    __table_args__ = (
-        Index("idx_messages_chat_id_created_at", "chat_id", "created_at"),
-    )
+    __table_args__ = (Index("idx_messages_chat_id_created_at", "chat_id", "created_at"),)
 
 
 class ChatFlowStepAttempt(Base):
     __tablename__ = "chat_flow_step_attempts"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    chat_id: Mapped[int] = mapped_column(
-        ForeignKey("chats.id", ondelete="CASCADE"), nullable=False
-    )
+    chat_id: Mapped[int] = mapped_column(ForeignKey("chats.id", ondelete="CASCADE"), nullable=False)
     flow_script_step_id: Mapped[int] = mapped_column(
         ForeignKey("flow_script_steps.id", ondelete="CASCADE"), nullable=False
     )

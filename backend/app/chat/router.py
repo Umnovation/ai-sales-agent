@@ -91,9 +91,7 @@ async def toggle_bot_control(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
 ) -> ApiResponse[ChatResponse]:
-    chat = await chat_service.toggle_bot_control(
-        db, chat_id, payload.is_controlled_by_bot
-    )
+    chat = await chat_service.toggle_bot_control(db, chat_id, payload.is_controlled_by_bot)
 
     await ws_manager.broadcast(
         chat_id,
@@ -134,9 +132,7 @@ async def public_init_chat(
         db, payload.visitor_id, payload.metadata
     )
 
-    messages: list[MessageResponse] = [
-        MessageResponse.model_validate(m) for m in chat.messages
-    ]
+    messages: list[MessageResponse] = [MessageResponse.model_validate(m) for m in chat.messages]
 
     return ApiResponse.ok(
         data=PublicChatInitResponse(
@@ -156,9 +152,7 @@ async def public_send_message(
     db: AsyncSession = Depends(get_db),
 ) -> ApiResponse[MessageResponse]:
     # Save visitor message
-    message = await chat_service.save_message(
-        db, chat_id, payload.content, sender_type="visitor"
-    )
+    message = await chat_service.save_message(db, chat_id, payload.content, sender_type="visitor")
     await db.commit()
     await db.refresh(message)
 

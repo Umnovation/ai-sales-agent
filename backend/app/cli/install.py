@@ -5,6 +5,7 @@ Usage:
 
 Creates the initial user account. Can only be run once (fails if users already exist).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -46,10 +47,10 @@ async def run_install() -> None:
 
         user = await auth_service.create_user(db, email=email, password=password, name=name)
 
-        print(f"\nUser created successfully!")
+        print("\nUser created successfully!")
         print(f"  Email: {user.email}")
         print(f"  Name: {user.name}")
-        print(f"\nYou can now log in at http://localhost:3000")
+        print("\nYou can now log in at http://localhost:3000")
 
 
 def main() -> None:

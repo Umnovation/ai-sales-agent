@@ -1,4 +1,5 @@
 """Celery tasks for async message processing."""
+
 from __future__ import annotations
 
 import asyncio
@@ -48,9 +49,7 @@ async def _process_ai_response_async(chat_id: int, message_id: int) -> None:
             # Get the user message content
             from sqlalchemy import select
 
-            msg_result = await db.execute(
-                select(Message).where(Message.id == message_id)
-            )
+            msg_result = await db.execute(select(Message).where(Message.id == message_id))
             user_message: Message | None = msg_result.scalar_one_or_none()
 
             if user_message is None:
@@ -84,9 +83,7 @@ async def _process_ai_response_async(chat_id: int, message_id: int) -> None:
                 return
 
             # Save bot response
-            bot_message: Message = await save_message(
-                db, chat_id, response, sender_type="bot"
-            )
+            bot_message: Message = await save_message(db, chat_id, response, sender_type="bot")
 
             log.info("bot_response_saved", bot_message_id=bot_message.id)
 
@@ -107,8 +104,11 @@ async def _process_ai_response_async(chat_id: int, message_id: int) -> None:
 
 @celery_app.task
 def on_ai_response_failure(
-    request: object, exc: Exception, traceback: object,
-    chat_id: int, message_id: int,
+    request: object,
+    exc: Exception,
+    traceback: object,
+    chat_id: int,
+    message_id: int,
 ) -> None:
     """Fallback: send error message when all retries exhausted."""
     asyncio.run(_send_fallback_message(chat_id))
@@ -120,8 +120,7 @@ async def _send_fallback_message(chat_id: int) -> None:
     from app.database import async_session_factory
 
     fallback: str = (
-        "Sorry, I'm experiencing technical difficulties. "
-        "A team member will follow up shortly."
+        "Sorry, I'm experiencing technical difficulties. A team member will follow up shortly."
     )
 
     async with async_session_factory() as db:

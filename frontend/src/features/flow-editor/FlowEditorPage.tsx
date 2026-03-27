@@ -49,9 +49,6 @@ export function FlowEditorPage(): React.ReactElement {
             <MessageSquare size={12} />
             Test Chat
           </button>
-          <button className="rounded-md border border-[var(--app-border)] p-1.5 text-[var(--app-font-muted)] transition-colors hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-font-primary)]">
-            <SettingsIcon size={14} />
-          </button>
         </div>
       </div>
 

@@ -34,9 +34,7 @@ class FlowScript(Base):
     __tablename__ = "flow_scripts"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    flow_id: Mapped[int] = mapped_column(
-        ForeignKey("flows.id", ondelete="CASCADE"), nullable=False
-    )
+    flow_id: Mapped[int] = mapped_column(ForeignKey("flows.id", ondelete="CASCADE"), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     transition_criteria: Mapped[str | None] = mapped_column(Text, nullable=True)

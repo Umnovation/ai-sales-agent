@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies import get_ai_provider, get_db
+from app.dependencies import get_db
 
 router = APIRouter(tags=["health"])
 
@@ -48,8 +48,9 @@ async def health_check(
 
     # AI Provider (reads key from DB)
     try:
-        from app.settings.models import CompanySettings
         from sqlalchemy import select as sa_select
+
+        from app.settings.models import CompanySettings
 
         cs_result = await db.execute(sa_select(CompanySettings).limit(1))
         cs = cs_result.scalar_one_or_none()

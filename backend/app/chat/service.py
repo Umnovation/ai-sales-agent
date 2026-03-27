@@ -34,7 +34,9 @@ async def list_chats(
     total: int = total_result.scalar_one()
 
     # Fetch page
-    query = query.order_by(Chat.updated_at.desc()).offset(pagination.offset).limit(pagination.per_page)
+    query = (
+        query.order_by(Chat.updated_at.desc()).offset(pagination.offset).limit(pagination.per_page)
+    )
     result = await db.execute(query)
     chats: list[Chat] = list(result.scalars().all())
 
@@ -63,9 +65,7 @@ async def list_chats(
 
 async def get_chat_with_messages(db: AsyncSession, chat_id: int) -> Chat:
     result = await db.execute(
-        select(Chat)
-        .options(selectinload(Chat.messages))
-        .where(Chat.id == chat_id)
+        select(Chat).options(selectinload(Chat.messages)).where(Chat.id == chat_id)
     )
     chat: Chat | None = result.scalar_one_or_none()
     if chat is None:
@@ -73,12 +73,8 @@ async def get_chat_with_messages(db: AsyncSession, chat_id: int) -> Chat:
     return chat
 
 
-async def toggle_bot_control(
-    db: AsyncSession, chat_id: int, is_bot: bool
-) -> Chat:
-    result = await db.execute(
-        select(Chat).where(Chat.id == chat_id).with_for_update()
-    )
+async def toggle_bot_control(db: AsyncSession, chat_id: int, is_bot: bool) -> Chat:
+    result = await db.execute(select(Chat).where(Chat.id == chat_id).with_for_update())
     chat: Chat | None = result.scalar_one_or_none()
     if chat is None:
         raise HTTPException(status_code=404, detail="Chat not found")
@@ -110,9 +106,7 @@ async def send_operator_message(
     db: AsyncSession, chat_id: int, content: str
 ) -> tuple[Chat, Message]:
     """Operator sends a message — automatically disables bot."""
-    result = await db.execute(
-        select(Chat).where(Chat.id == chat_id).with_for_update()
-    )
+    result = await db.execute(select(Chat).where(Chat.id == chat_id).with_for_update())
     chat: Chat | None = result.scalar_one_or_none()
     if chat is None:
         raise HTTPException(status_code=404, detail="Chat not found")
@@ -183,9 +177,7 @@ async def init_public_chat(
     return chat, resolved_visitor_id, True
 
 
-async def save_message(
-    db: AsyncSession, chat_id: int, content: str, sender_type: str
-) -> Message:
+async def save_message(db: AsyncSession, chat_id: int, content: str, sender_type: str) -> Message:
     message = Message(
         chat_id=chat_id,
         sender_type=sender_type,

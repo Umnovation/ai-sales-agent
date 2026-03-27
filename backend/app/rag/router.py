@@ -31,9 +31,7 @@ async def list_documents(
     _: User = Depends(get_current_user),
 ) -> ApiResponse[list[DocumentResponse]]:
     documents = await rag_service.list_documents(db)
-    return ApiResponse.ok(
-        data=[DocumentResponse.model_validate(d) for d in documents]
-    )
+    return ApiResponse.ok(data=[DocumentResponse.model_validate(d) for d in documents])
 
 
 @router.delete("/{document_id}")

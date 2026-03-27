@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import and_, cast, func, select, Date
+from sqlalchemy import Date, and_, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.analytics.schemas import AnalyticsSummary, ConversationDataPoint
@@ -11,9 +11,7 @@ from app.chat.models import Chat
 
 async def get_summary(db: AsyncSession) -> AnalyticsSummary:
     # Total non-test chats
-    total_result = await db.execute(
-        select(func.count(Chat.id)).where(Chat.is_test.is_(False))
-    )
+    total_result = await db.execute(select(func.count(Chat.id)).where(Chat.is_test.is_(False)))
     total: int = total_result.scalar_one()
 
     # Active (bot still controlling)
@@ -66,7 +64,4 @@ async def get_conversations_over_time(
     )
 
     rows = result.all()
-    return [
-        ConversationDataPoint(date=str(row.date), count=row.count)
-        for row in rows
-    ]
+    return [ConversationDataPoint(date=str(row.date), count=row.count) for row in rows]

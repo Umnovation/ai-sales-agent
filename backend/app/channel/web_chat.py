@@ -3,6 +3,7 @@
 This is the default channel. Messages are sent/received via the
 WebSocket connection managed by ws_manager.
 """
+
 from __future__ import annotations
 
 from app.channel.base import IncomingMessage
@@ -25,6 +26,4 @@ class WebChatChannel:
         )
 
     async def receive_message(self) -> IncomingMessage:
-        raise NotImplementedError(
-            "WebChatChannel receives messages via REST API, not polling."
-        )
+        raise NotImplementedError("WebChatChannel receives messages via REST API, not polling.")

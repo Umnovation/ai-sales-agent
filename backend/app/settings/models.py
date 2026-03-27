@@ -32,9 +32,7 @@ class Context(Base):
     __tablename__ = "contexts"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    type: Mapped[str] = mapped_column(
-        String(20), nullable=False
-    )  # "rule" | "restriction"
+    type: Mapped[str] = mapped_column(String(20), nullable=False)  # "rule" | "restriction"
     text: Mapped[str] = mapped_column(Text, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(

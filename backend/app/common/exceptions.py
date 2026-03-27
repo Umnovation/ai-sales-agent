@@ -16,9 +16,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     ) -> JSONResponse:
         errors: dict[str, list[str]] = {}
         for error in exc.errors():
-            field_parts: list[str] = [
-                str(loc) for loc in error["loc"] if str(loc) != "body"
-            ]
+            field_parts: list[str] = [str(loc) for loc in error["loc"] if str(loc) != "body"]
             field: str = ".".join(field_parts) if field_parts else "general"
             errors.setdefault(field, []).append(str(error["msg"]))
 
@@ -29,9 +27,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(HTTPException)
-    async def http_exception_handler(
-        _request: Request, exc: HTTPException
-    ) -> JSONResponse:
+    async def http_exception_handler(_request: Request, exc: HTTPException) -> JSONResponse:
         response = ApiResponse.error(message=str(exc.detail))
         return JSONResponse(
             status_code=exc.status_code,
@@ -39,9 +35,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(Exception)
-    async def unhandled_exception_handler(
-        _request: Request, exc: Exception
-    ) -> JSONResponse:
+    async def unhandled_exception_handler(_request: Request, exc: Exception) -> JSONResponse:
         import structlog
 
         logger: structlog.stdlib.BoundLogger = structlog.get_logger()

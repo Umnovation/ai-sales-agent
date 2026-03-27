@@ -1,4 +1,5 @@
 """RAG service — document upload, chunking, embedding, retrieval."""
+
 from __future__ import annotations
 
 import os
@@ -111,9 +112,7 @@ async def list_documents(db: AsyncSession) -> list[Document]:
 
 
 async def delete_document(db: AsyncSession, document_id: int) -> None:
-    result = await db.execute(
-        select(Document).where(Document.id == document_id)
-    )
+    result = await db.execute(select(Document).where(Document.id == document_id))
     document: Document | None = result.scalar_one_or_none()
     if document is None:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -170,8 +169,9 @@ def _parse_file(content: bytes, extension: str) -> str:
     if extension == ".txt":
         return content.decode("utf-8", errors="replace")
     elif extension == ".docx":
-        import docx
         from io import BytesIO
+
+        import docx
 
         doc = docx.Document(BytesIO(content))
         return "\n".join(paragraph.text for paragraph in doc.paragraphs)
@@ -181,9 +181,7 @@ def _parse_file(content: bytes, extension: str) -> str:
         from PyPDF2 import PdfReader
 
         reader = PdfReader(BytesIO(content))
-        return "\n".join(
-            page.extract_text() or "" for page in reader.pages
-        )
+        return "\n".join(page.extract_text() or "" for page in reader.pages)
     else:
         msg: str = f"Unsupported file type: {extension}"
         raise ValueError(msg)

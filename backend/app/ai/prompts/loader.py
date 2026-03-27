@@ -2,6 +2,7 @@
 
 Loads prompt templates from XML files and renders them with variables.
 """
+
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
@@ -26,7 +27,7 @@ def load_prompt(name: str, variables: dict[str, str] | None = None) -> str:
         msg: str = f"Prompt template not found: {file_path}"
         raise FileNotFoundError(msg)
 
-    tree: ET.ElementTree = ET.parse(file_path)  # noqa: S314
+    tree: ET.ElementTree = ET.parse(file_path)
     root: ET.Element = tree.getroot()
 
     parts: list[str] = []

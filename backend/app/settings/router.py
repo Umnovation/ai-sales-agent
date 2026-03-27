@@ -64,9 +64,7 @@ async def list_contexts(
     _: User = Depends(get_current_user),
 ) -> ApiResponse[list[ContextResponse]]:
     contexts = await settings_service.list_contexts(db)
-    return ApiResponse.ok(
-        data=[ContextResponse.model_validate(c) for c in contexts]
-    )
+    return ApiResponse.ok(data=[ContextResponse.model_validate(c) for c in contexts])
 
 
 @router.post("/contexts", status_code=201)

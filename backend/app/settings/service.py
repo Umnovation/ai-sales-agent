@@ -19,9 +19,7 @@ async def get_settings(db: AsyncSession) -> CompanySettings:
     return settings
 
 
-async def update_settings(
-    db: AsyncSession, payload: CompanySettingsUpdate
-) -> CompanySettings:
+async def update_settings(db: AsyncSession, payload: CompanySettingsUpdate) -> CompanySettings:
     settings: CompanySettings = await get_settings(db)
     update_data: dict[str, object] = payload.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -52,9 +50,7 @@ async def get_context_by_id(db: AsyncSession, context_id: int) -> Context:
     return context
 
 
-async def update_context(
-    db: AsyncSession, context_id: int, payload: ContextUpdate
-) -> Context:
+async def update_context(db: AsyncSession, context_id: int, payload: ContextUpdate) -> Context:
     context: Context = await get_context_by_id(db, context_id)
     update_data: dict[str, object] = payload.model_dump(exclude_unset=True)
     for field, value in update_data.items():
