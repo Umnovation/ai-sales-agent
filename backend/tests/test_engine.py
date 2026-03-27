@@ -156,16 +156,19 @@ async def test_max_attempts_exceeded(db: AsyncSession, mock_ai: MockAIProvider) 
         extracted_data=None,
     )
 
-    # Process 2 messages (max_attempts=2 for step1)
+    # With evaluate-before-execute cycle and max_attempts=2:
+    # Msg 1: attempt=1, first entry → skip eval → execute (bot asks question)
+    # Msg 2: attempt=2, eval → not finished, 2 > 2? No → execute (user gets a chance)
+    # Msg 3: attempt=3, eval → not finished, 3 > 2? Yes → fail
     msg1 = Message(chat_id=chat.id, sender_type="visitor", content="Hi")
     msg2 = Message(chat_id=chat.id, sender_type="visitor", content="Hello again")
-    db.add_all([msg1, msg2])
+    msg3 = Message(chat_id=chat.id, sender_type="visitor", content="One more")
+    db.add_all([msg1, msg2, msg3])
     await db.flush()
 
-    # First attempt
     await process_message(db, mock_ai, chat.id, "Hi")  # type: ignore[arg-type]
-    # Second attempt — should trigger max attempts
     await process_message(db, mock_ai, chat.id, "Hello again")  # type: ignore[arg-type]
+    await process_message(db, mock_ai, chat.id, "One more")  # type: ignore[arg-type]
 
     # Check that attempt was marked as finished with fail
     from sqlalchemy import select
@@ -179,7 +182,7 @@ async def test_max_attempts_exceeded(db: AsyncSession, mock_ai: MockAIProvider) 
     )
     attempt = result.scalar_one_or_none()
     assert attempt is not None
-    assert attempt.attempts >= 2
+    assert attempt.attempts >= 3
     assert attempt.is_finished is True
     assert attempt.finish_type == "fail"
 
