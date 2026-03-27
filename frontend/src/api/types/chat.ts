@@ -3,7 +3,7 @@ export interface Message {
   readonly chat_id: number;
   readonly sender_type: "bot" | "visitor" | "user" | "system";
   readonly content: string;
-  readonly message_type: "text" | "system_event";
+  readonly message_type: "text" | "system_event" | "debug";
   readonly created_at: string;
 }
 

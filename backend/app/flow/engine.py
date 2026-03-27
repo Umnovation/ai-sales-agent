@@ -291,7 +291,9 @@ async def process_message(
         target_script: FlowScript | None = next(
             (s for s in flow.scripts if s.id == transition.selected_script_id), None
         )
-        target_name: str = target_script.name if target_script else str(transition.selected_script_id)
+        target_name: str = (
+            target_script.name if target_script else str(transition.selected_script_id)
+        )
 
         chat.flow_script_id = transition.selected_script_id
         debug.append(
