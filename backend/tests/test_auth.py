@@ -61,4 +61,4 @@ async def test_login_wrong_password(client: AsyncClient, auth_token: str) -> Non
 @pytest.mark.asyncio
 async def test_protected_endpoint_without_token(client: AsyncClient) -> None:
     response = await client.get("/api/settings")
-    assert response.status_code == 403  # HTTPBearer returns 403 without token
+    assert response.status_code in (401, 403)

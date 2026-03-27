@@ -41,6 +41,6 @@ def load_prompt(name: str, variables: dict[str, str] | None = None) -> str:
 
     if variables:
         for key, value in variables.items():
-            prompt = prompt.replace(f"{{{{{key}}}}}", value)
+            prompt = prompt.replace(f"{{{{{key}}}}}", value or "")
 
     return prompt
