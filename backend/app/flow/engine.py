@@ -369,8 +369,12 @@ async def process_message(
                 )
                 debug.append(f"Routed → {next_step.title} ({finish_type})")
 
-            # Re-resolve active step after routing
-            step = await resolve_active_step(db, chat)
+            # Use routed step directly (not resolve — that returns first by order)
+            if next_step is not None:
+                step = next_step
+            else:
+                step = await resolve_active_step(db, chat)
+
             if step is None:
                 log.info("all_steps_completed")
                 debug.append("All steps completed — no response generated")

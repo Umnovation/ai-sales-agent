@@ -14,15 +14,16 @@
         Analyze the latest messages in the conversation. Check each script's
         transition criteria against the conversation context.
 
-        For each script, evaluate whether its criteria matches the current situation.
-        Select the most appropriate script to transition to, or select none if the
-        conversation should continue on the current path.
+        IMPORTANT: A transition should ONLY happen when a script's criteria CLEARLY
+        and SPECIFICALLY matches what the user said. If no criteria is a clear match,
+        return selected_script_id=null with confidence=0.0.
+
+        Do NOT force a transition. Most messages will NOT trigger any transition.
+        When in doubt, return null — it is always safe to stay on the current path.
 
         You must provide:
         1. selected_script_id — the ID of the script to transition to, or null if no transition
         2. reason — why this transition is or isn't appropriate
         3. confidence — a number from 0.0 to 1.0 indicating how confident you are
-
-        Only recommend a transition if confidence is 0.7 or higher.
     </instructions>
 </prompt>
