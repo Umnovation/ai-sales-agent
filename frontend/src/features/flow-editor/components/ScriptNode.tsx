@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { Settings, Plus, ArrowDown, RefreshCw, Check, X } from "lucide-react";
+import { Settings, Plus, RefreshCw, Check, X } from "lucide-react";
 import type { FlowScript, FlowScriptStep } from "@/api/types/flow";
 
 interface ScriptNodeData {
@@ -29,123 +29,125 @@ function ScriptNodeComponent({ data }: NodeProps): React.ReactElement {
 
   return (
     <div
-      className={`min-w-[260px] max-w-[280px] rounded-xl border-2 bg-white shadow-md transition-colors ${
-        isSelected
-          ? "border-[var(--app-primary)] shadow-lg"
-          : "border-[var(--app-border)]"
+      className={`w-[260px] rounded-xl bg-white ${
+        isSelected ? "ring-2 ring-[var(--app-primary)]/20" : ""
       }`}
+      style={{
+        border: "1px solid var(--app-border)",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+      }}
     >
-      <Handle type="target" position={Position.Left} className="!bg-[var(--app-primary)]" />
-      <Handle type="source" position={Position.Right} className="!bg-[var(--app-primary)]" />
+      {/* Hidden handles */}
+      <Handle type="target" position={Position.Left} className="!h-1.5 !w-1.5 !border-none !bg-transparent !opacity-0" />
+      <Handle type="source" position={Position.Right} className="!h-1.5 !w-1.5 !border-none !bg-transparent !opacity-0" />
 
-      {/* Header */}
+      {/* Header: START badge + name */}
       <div
-        className="flex cursor-pointer items-center justify-between rounded-t-[10px] border-b border-[var(--app-border-light)] px-4 py-3"
+        className="cursor-pointer px-4 pt-4 pb-1"
         onClick={() => onSelectScript(script.id)}
       >
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-[var(--app-font-primary)]">
-            {script.name}
-          </span>
           {script.is_starting_script && (
-            <span className="rounded bg-[var(--app-primary)] px-1.5 py-0.5 text-[10px] font-bold text-white">
-              START
+            <span className="rounded bg-[var(--app-success)] px-2 py-[2px] text-[9px] font-bold uppercase tracking-wide text-white">
+              Start
             </span>
           )}
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            className="rounded p-1 text-[var(--app-font-muted)] transition-colors hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-font-primary)]"
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelectScript(script.id);
-            }}
-          >
-            <Settings size={14} />
-          </button>
-          <button
-            className="rounded p-1 text-[var(--app-font-muted)] transition-colors hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-font-primary)]"
-            onClick={(e) => {
-              e.stopPropagation();
-              onAddStep(script.id);
-            }}
-          >
-            <Plus size={14} />
-          </button>
+          <span className="text-[15px] font-bold text-[var(--app-font-primary)]">
+            {script.name}
+          </span>
         </div>
       </div>
 
-      {/* Description */}
-      {script.description && (
-        <div className="border-b border-[var(--app-border-light)] px-4 py-2">
-          <p className="truncate text-xs text-[var(--app-font-secondary)]">
+      {/* Description + meta */}
+      <div className="px-4 pb-2.5">
+        {script.description && (
+          <p className="mb-0.5 truncate text-[12px] text-[var(--app-font-secondary)]">
             {script.description}
           </p>
-        </div>
-      )}
-
-      {/* Meta */}
-      <div className="border-b border-[var(--app-border-light)] px-4 py-1.5">
-        <span className="text-[10px] text-[var(--app-font-muted)]">
+        )}
+        <p className="text-[11px] text-[var(--app-font-muted)]">
           {script.steps.length} steps &nbsp;|&nbsp; Priority: {script.priority}
-        </span>
+        </p>
       </div>
 
-      {/* Steps list */}
-      <div className="px-3 py-2">
+      {/* Separator */}
+      <div className="mx-4 border-t border-[var(--app-border-light)]" />
+
+      {/* Steps list — each step is a mini card */}
+      <div className="px-3 py-2.5">
         {sortedSteps.length === 0 ? (
-          <p className="py-2 text-center text-xs text-[var(--app-font-muted)]">
+          <p className="py-3 text-center text-[11px] text-[var(--app-font-muted)]">
             No steps yet
           </p>
         ) : (
-          <div className="flex flex-col">
-            {sortedSteps.map((step, index) => (
-              <div key={step.id}>
+          <div className="flex flex-col gap-1.5">
+            {sortedSteps.map((step) => (
+              <div key={step.id} className="relative">
+                {/* Per-step handles for edge connections */}
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id={`step-${step.id}-source`}
+                  className="!h-2 !w-2 !border-none !bg-transparent !opacity-0"
+                  style={{ top: "50%" }}
+                />
+                <Handle
+                  type="target"
+                  position={Position.Left}
+                  id={`step-${step.id}-target`}
+                  className="!h-2 !w-2 !border-none !bg-transparent !opacity-0"
+                  style={{ top: "50%" }}
+                />
                 <button
-                  className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors ${
+                  className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors ${
                     selectedStepId === step.id
-                      ? "bg-[var(--app-primary)]/5 ring-1 ring-[var(--app-primary)]/30"
-                      : "hover:bg-[var(--app-hover-bg)]"
+                      ? "border-[var(--app-primary)]/20 bg-indigo-50/60"
+                      : "border-[var(--app-border-light)] bg-[var(--app-bg-page)] hover:bg-[var(--app-hover-bg)]"
                   }`}
                   onClick={() => onSelectStep(step.id, script.id)}
                 >
-                  {/* Step number */}
-                  <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[var(--app-primary)] text-[10px] font-bold text-white">
+                  {/* Step number circle */}
+                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border border-[var(--app-border)] bg-white text-[10px] font-semibold text-[var(--app-font-secondary)]">
                     {step.order}
                   </div>
 
-                  {/* Step info */}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium text-[var(--app-font-primary)]">
-                      {step.title}
-                    </p>
-                  </div>
+                  {/* Step title */}
+                  <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-[var(--app-font-primary)]">
+                    {step.title}
+                  </span>
 
-                  {/* Indicators */}
-                  <div className="flex items-center gap-1">
-                    <span className="flex items-center gap-0.5 text-[10px] text-[var(--app-font-muted)]">
-                      <RefreshCw size={9} />
-                      {step.max_attempts}
-                    </span>
+                  {/* Retry indicator */}
+                  <div className="flex flex-shrink-0 items-center gap-0.5 text-[10px] text-[var(--app-font-muted)]">
+                    <RefreshCw size={9} />
+                    <span>x{step.max_attempts === -1 ? "∞" : step.max_attempts}</span>
                     {step.success_step_id !== null && (
-                      <Check size={12} className="text-[var(--app-success)]" />
+                      <Check size={10} className="ml-0.5 text-[var(--app-success)]" />
                     )}
                     {step.fail_step_id !== null && (
-                      <X size={12} className="text-[var(--app-error)]" />
+                      <X size={10} className="text-[var(--app-error)]" />
                     )}
                   </div>
                 </button>
-
-                {/* Arrow between steps */}
-                {index < sortedSteps.length - 1 && (
-                  <div className="flex justify-center py-0.5">
-                    <ArrowDown size={12} className="text-[var(--app-border)]" />
-                  </div>
-                )}
               </div>
             ))}
           </div>
         )}
+      </div>
+
+      {/* Bottom: gear + plus */}
+      <div className="flex items-center justify-end gap-0.5 border-t border-[var(--app-border-light)] px-3 py-2">
+        <button
+          className="rounded-lg p-1.5 text-[var(--app-font-muted)] transition-colors hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-font-primary)]"
+          onClick={() => onSelectScript(script.id)}
+        >
+          <Settings size={14} />
+        </button>
+        <button
+          className="rounded-lg p-1.5 text-[var(--app-font-muted)] transition-colors hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-font-primary)]"
+          onClick={() => onAddStep(script.id)}
+        >
+          <Plus size={14} />
+        </button>
       </div>
     </div>
   );

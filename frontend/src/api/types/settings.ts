@@ -4,6 +4,8 @@ export interface CompanySettings {
   readonly company_description: string | null;
   readonly ai_provider: string;
   readonly ai_model: string;
+  readonly ai_api_key_set: boolean;
+  readonly ai_embedding_model: string;
   readonly created_at: string;
   readonly updated_at: string;
 }
@@ -13,6 +15,8 @@ export interface CompanySettingsUpdate {
   readonly company_description?: string | null;
   readonly ai_provider?: string;
   readonly ai_model?: string;
+  readonly ai_api_key?: string;
+  readonly ai_embedding_model?: string;
 }
 
 export interface Context {

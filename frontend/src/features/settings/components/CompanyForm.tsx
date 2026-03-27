@@ -17,6 +17,7 @@ export function CompanyForm({
   );
   const [provider, setProvider] = useState<string>(settings.ai_provider);
   const [model, setModel] = useState<string>(settings.ai_model);
+  const [apiKey, setApiKey] = useState<string>("");
   const [saving, setSaving] = useState<boolean>(false);
   const [dirty, setDirty] = useState<boolean>(false);
 
@@ -25,6 +26,7 @@ export function CompanyForm({
     setDescription(settings.company_description ?? "");
     setProvider(settings.ai_provider);
     setModel(settings.ai_model);
+    setApiKey("");
     setDirty(false);
   }, [settings]);
 
@@ -36,12 +38,18 @@ export function CompanyForm({
     e.preventDefault();
     setSaving(true);
     try {
-      await onSave({
+      const payload: CompanySettingsUpdate = {
         company_name: name,
         company_description: description || null,
         ai_provider: provider,
         ai_model: model,
-      });
+      };
+      // Only send api_key if user typed a new one
+      if (apiKey) {
+        (payload as Record<string, unknown>)["ai_api_key"] = apiKey;
+      }
+      await onSave(payload);
+      setApiKey("");
       setDirty(false);
     } finally {
       setSaving(false);
@@ -99,6 +107,29 @@ export function CompanyForm({
           <option value="gpt-4o-mini">GPT-4o Mini</option>
           <option value="gpt-4.1">GPT-4.1</option>
         </select>
+      </div>
+
+      <div>
+        <label className="mb-1.5 block text-sm font-medium text-[var(--app-font-primary)]">
+          API Key
+        </label>
+        <input
+          type="password"
+          value={apiKey}
+          onChange={(e) => { setApiKey(e.target.value); markDirty(); }}
+          placeholder={settings.ai_api_key_set ? "••••••••  (key is set, enter new to replace)" : "Enter your OpenAI API key"}
+          className="h-10 w-full rounded-lg border border-[var(--app-border)] bg-white px-3 text-sm text-[var(--app-font-primary)] outline-none focus:border-[var(--app-primary)]"
+        />
+        {settings.ai_api_key_set && (
+          <p className="mt-1 text-xs text-[var(--app-success)]">
+            API key is configured
+          </p>
+        )}
+        {!settings.ai_api_key_set && (
+          <p className="mt-1 text-xs text-[var(--app-warning)]">
+            API key is not set — AI features will not work
+          </p>
+        )}
       </div>
 
       <div className="flex justify-center">

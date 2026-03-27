@@ -12,6 +12,8 @@ class CompanySettingsResponse(BaseModel):
     company_description: str | None
     ai_provider: str
     ai_model: str
+    ai_api_key_set: bool  # True if key is set, never expose the key itself
+    ai_embedding_model: str
     created_at: datetime
     updated_at: datetime
 
@@ -23,6 +25,8 @@ class CompanySettingsUpdate(BaseModel):
     company_description: str | None = None
     ai_provider: str | None = None
     ai_model: str | None = None
+    ai_api_key: str | None = None
+    ai_embedding_model: str | None = None
 
 
 class ContextResponse(BaseModel):

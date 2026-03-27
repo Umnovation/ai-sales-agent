@@ -4,8 +4,6 @@ from typing import Protocol, runtime_checkable
 
 from openai import AsyncOpenAI
 
-from app.config import settings
-
 
 @runtime_checkable
 class Embedder(Protocol):
@@ -22,11 +20,14 @@ class Embedder(Protocol):
 
 
 class OpenAIEmbedder:
-    """OpenAI embeddings implementation."""
+    """OpenAI embeddings implementation.
 
-    def __init__(self) -> None:
-        self._client: AsyncOpenAI = AsyncOpenAI(api_key=settings.openai_api_key)
-        self._model: str = settings.openai_embedding_model
+    API key and model are provided at init time (from CompanySettings in DB).
+    """
+
+    def __init__(self, api_key: str, model: str = "text-embedding-3-small") -> None:
+        self._client: AsyncOpenAI = AsyncOpenAI(api_key=api_key)
+        self._model: str = model
         self._dimensions: int = 1536
 
     async def embed(self, texts: list[str]) -> list[list[float]]:

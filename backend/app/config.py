@@ -22,12 +22,6 @@ class Settings(BaseSettings):
     # Redis
     redis_url: str = "redis://redis:6379/0"
 
-    # AI Provider
-    ai_provider: str = "openai"
-    openai_api_key: str = ""
-    openai_model: str = "gpt-4o"
-    openai_embedding_model: str = "text-embedding-3-small"
-
     # CORS
     cors_origins: list[str] = ["http://localhost:3000"]
 

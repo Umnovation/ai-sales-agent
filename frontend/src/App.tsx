@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "sonner";
 import { DashboardLayout } from "@/shared/layouts/DashboardLayout";
 import { LoginPage } from "@/features/auth/LoginPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
@@ -22,6 +23,7 @@ function ProtectedRoute({
 function App(): React.ReactElement {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" richColors closeButton />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route

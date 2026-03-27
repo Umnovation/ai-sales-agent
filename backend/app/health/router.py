@@ -46,11 +46,27 @@ async def health_check(
     except Exception as e:
         checks["redis"] = ComponentHealth(status="error", detail=str(e))
 
-    # AI Provider
+    # AI Provider (reads key from DB)
     try:
-        provider = get_ai_provider()
-        await provider.validate_connection()
-        checks["ai_provider"] = ComponentHealth(status="ok")
+        from app.settings.models import CompanySettings
+        from sqlalchemy import select as sa_select
+
+        cs_result = await db.execute(sa_select(CompanySettings).limit(1))
+        cs = cs_result.scalar_one_or_none()
+        if cs is None or not cs.ai_api_key:
+            checks["ai_provider"] = ComponentHealth(
+                status="error", detail="API key not configured in Settings"
+            )
+        else:
+            from app.ai.providers.openai_provider import OpenAIProvider
+
+            provider = OpenAIProvider(
+                api_key=cs.ai_api_key,
+                model=cs.ai_model,
+                embedding_model=cs.ai_embedding_model,
+            )
+            await provider.validate_connection()
+            checks["ai_provider"] = ComponentHealth(status="ok")
     except Exception as e:
         checks["ai_provider"] = ComponentHealth(status="error", detail=str(e))
 

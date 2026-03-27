@@ -16,6 +16,10 @@ class CompanySettings(Base):
     company_description: Mapped[str | None] = mapped_column(Text, nullable=True)
     ai_provider: Mapped[str] = mapped_column(String(50), nullable=False, default="openai")
     ai_model: Mapped[str] = mapped_column(String(100), nullable=False, default="gpt-4o")
+    ai_api_key: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    ai_embedding_model: Mapped[str] = mapped_column(
+        String(100), nullable=False, default="text-embedding-3-small"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

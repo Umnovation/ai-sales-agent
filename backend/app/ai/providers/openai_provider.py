@@ -7,17 +7,21 @@ import structlog
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 
-from app.config import settings
-
 logger: structlog.stdlib.BoundLogger = structlog.get_logger()
 
 
 class OpenAIProvider:
-    """OpenAI API implementation of AIProvider protocol."""
+    """OpenAI API implementation of AIProvider protocol.
 
-    def __init__(self) -> None:
-        self._client: AsyncOpenAI = AsyncOpenAI(api_key=settings.openai_api_key)
-        self._model: str = settings.openai_model
+    API key and model are provided at init time (from CompanySettings in DB).
+    """
+
+    def __init__(self, api_key: str, model: str, embedding_model: str) -> None:
+        if not api_key:
+            raise ValueError("OpenAI API key is not configured. Set it in Settings.")
+        self._client: AsyncOpenAI = AsyncOpenAI(api_key=api_key)
+        self._model: str = model
+        self._embedding_model: str = embedding_model
 
     async def generate(
         self,

@@ -18,7 +18,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "6380:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -30,11 +30,13 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
       - ./backend:/app
     env_file:
       - ./backend/.env
+    environment:
+      PYTHONPATH: /app
     depends_on:
       db:
         condition: service_healthy
@@ -50,6 +52,8 @@ services:
       - ./backend:/app
     env_file:
       - ./backend/.env
+    environment:
+      PYTHONPATH: /app
     depends_on:
       db:
         condition: service_healthy

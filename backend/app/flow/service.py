@@ -62,9 +62,14 @@ async def get_script_by_id(db: AsyncSession, script_id: int) -> FlowScript:
 
 async def create_script(db: AsyncSession, payload: ScriptCreate) -> FlowScript:
     flow: Flow = await get_flow(db)
-    script = FlowScript(flow_id=flow.id, **payload.model_dump())
+    data: dict[str, object] = payload.model_dump()
+    # Auto-set first script as starting
+    if not any(s.is_starting_script for s in flow.scripts):
+        data["is_starting_script"] = True
+    script = FlowScript(flow_id=flow.id, **data)
     db.add(script)
     await db.commit()
+    await db.refresh(script)
     await db.refresh(script, ["steps"])
     return script
 
@@ -77,6 +82,7 @@ async def update_script(
     for field, value in update_data.items():
         setattr(script, field, value)
     await db.commit()
+    await db.refresh(script)
     await db.refresh(script, ["steps"])
     return script
 
@@ -88,6 +94,7 @@ async def update_script_position(
     script.position_x = payload.position_x
     script.position_y = payload.position_y
     await db.commit()
+    await db.refresh(script)
     await db.refresh(script, ["steps"])
     return script
 

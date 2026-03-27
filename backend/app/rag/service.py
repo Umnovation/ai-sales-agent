@@ -56,8 +56,14 @@ async def upload_document(
     # Chunk
     chunks: list[str] = _chunk_text(text_content)
 
-    # Embed
-    embedder = OpenAIEmbedder()
+    # Embed — get API key from CompanySettings
+    from app.settings.models import CompanySettings
+
+    cs_result = await db.execute(select(CompanySettings).limit(1))
+    cs: CompanySettings | None = cs_result.scalar_one_or_none()
+    if cs is None or not cs.ai_api_key:
+        raise HTTPException(status_code=400, detail="AI API key not configured in Settings.")
+    embedder = OpenAIEmbedder(api_key=cs.ai_api_key, model=cs.ai_embedding_model)
     embeddings: list[list[float]] = await embedder.embed(chunks)
 
     # Save to DB
@@ -130,7 +136,13 @@ async def retrieve_relevant_chunks(
     limit: int = 3,
 ) -> list[str]:
     """Retrieve most relevant document chunks for a query."""
-    embedder = OpenAIEmbedder()
+    from app.settings.models import CompanySettings
+
+    cs_result = await db.execute(select(CompanySettings).limit(1))
+    cs: CompanySettings | None = cs_result.scalar_one_or_none()
+    if cs is None or not cs.ai_api_key:
+        return []  # No key = no RAG, silently skip
+    embedder = OpenAIEmbedder(api_key=cs.ai_api_key, model=cs.ai_embedding_model)
     query_embeddings: list[list[float]] = await embedder.embed([query])
     query_embedding: list[float] = query_embeddings[0]
 

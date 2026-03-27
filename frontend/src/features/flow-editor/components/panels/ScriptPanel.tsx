@@ -1,5 +1,6 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { FlowScript, ScriptUpdateRequest } from "@/api/types/flow";
 
@@ -22,18 +23,25 @@ export function ScriptPanel({
   const [isStarting, setIsStarting] = useState<boolean>(script.is_starting_script);
   const [priority, setPriority] = useState<number>(script.priority);
   const [saving, setSaving] = useState<boolean>(false);
+  const skipSyncRef = useRef<boolean>(false);
 
   useEffect(() => {
+    // Don't overwrite local state right after save (wait for next real prop change)
+    if (skipSyncRef.current) {
+      skipSyncRef.current = false;
+      return;
+    }
     setName(script.name);
     setDescription(script.description ?? "");
     setCriteria(script.transition_criteria ?? "");
     setIsStarting(script.is_starting_script);
     setPriority(script.priority);
-  }, [script]);
+  }, [script.id, script.name, script.description, script.transition_criteria, script.is_starting_script, script.priority]);
 
   async function handleSave(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
     setSaving(true);
+    skipSyncRef.current = true;
     try {
       await onUpdate(script.id, {
         name,
@@ -42,8 +50,21 @@ export function ScriptPanel({
         is_starting_script: isStarting,
         priority,
       });
+      toast.success("Script saved");
+    } catch {
+      toast.error("Failed to save script");
+      skipSyncRef.current = false;
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDelete(): Promise<void> {
+    try {
+      await onDelete(script.id);
+      toast.success("Script deleted");
+    } catch {
+      toast.error("Failed to delete script");
     }
   }
 
@@ -139,7 +160,7 @@ export function ScriptPanel({
             type="button"
             variant="ghost"
             className="text-[var(--app-error)] hover:bg-red-50 hover:text-[var(--app-error)]"
-            onClick={() => void onDelete(script.id)}
+            onClick={() => void handleDelete()}
           >
             Delete
           </Button>

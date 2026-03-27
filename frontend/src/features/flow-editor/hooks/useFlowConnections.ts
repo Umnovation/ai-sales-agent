@@ -2,15 +2,6 @@ import { useMemo } from "react";
 import type { Edge } from "@xyflow/react";
 import type { Flow } from "@/api/types/flow";
 
-export interface FlowConnection {
-  readonly id: string;
-  readonly sourceScriptId: number;
-  readonly sourceStepId: number;
-  readonly targetScriptId: number;
-  readonly targetStepId: number;
-  readonly type: "success" | "fail";
-}
-
 export function useFlowConnections(flow: Flow | null): Edge[] {
   return useMemo((): Edge[] => {
     if (!flow) return [];
@@ -27,7 +18,9 @@ export function useFlowConnections(flow: Flow | null): Edge[] {
             edges.push({
               id: `success-${step.id}-${step.success_step_id}`,
               source: `script-${script.id}`,
+              sourceHandle: `step-${step.id}-source`,
               target: `script-${targetScript.id}`,
+              targetHandle: `step-${step.success_step_id}-target`,
               type: "flowEdge",
               data: { connectionType: "success" },
               animated: false,
@@ -43,7 +36,9 @@ export function useFlowConnections(flow: Flow | null): Edge[] {
             edges.push({
               id: `fail-${step.id}-${step.fail_step_id}`,
               source: `script-${script.id}`,
+              sourceHandle: `step-${step.id}-source`,
               target: `script-${targetScript.id}`,
+              targetHandle: `step-${step.fail_step_id}-target`,
               type: "flowEdge",
               data: { connectionType: "fail" },
               animated: false,

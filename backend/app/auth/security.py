@@ -24,8 +24,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_access_token(user_id: int) -> str:
     expire: datetime = datetime.now(UTC) + timedelta(days=settings.jwt_expiration_days)
-    payload: dict[str, int | datetime] = {
-        "sub": user_id,
+    payload: dict[str, str | datetime] = {
+        "sub": str(user_id),
         "exp": expire,
     }
     token: str = jwt.encode(payload, settings.app_secret_key, algorithm=ALGORITHM)

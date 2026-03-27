@@ -18,13 +18,31 @@ from app.settings.schemas import (
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
 
+def _to_response(settings: object) -> CompanySettingsResponse:
+    """Serialize settings without exposing the API key."""
+    from app.settings.models import CompanySettings as CSModel
+
+    s: CSModel = settings  # type: ignore[assignment]
+    return CompanySettingsResponse(
+        id=s.id,
+        company_name=s.company_name,
+        company_description=s.company_description,
+        ai_provider=s.ai_provider,
+        ai_model=s.ai_model,
+        ai_api_key_set=bool(s.ai_api_key),
+        ai_embedding_model=s.ai_embedding_model,
+        created_at=s.created_at,
+        updated_at=s.updated_at,
+    )
+
+
 @router.get("")
 async def get_settings(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
 ) -> ApiResponse[CompanySettingsResponse]:
     settings = await settings_service.get_settings(db)
-    return ApiResponse.ok(data=CompanySettingsResponse.model_validate(settings))
+    return ApiResponse.ok(data=_to_response(settings))
 
 
 @router.put("")
@@ -35,7 +53,7 @@ async def update_settings(
 ) -> ApiResponse[CompanySettingsResponse]:
     settings = await settings_service.update_settings(db, payload)
     return ApiResponse.ok(
-        data=CompanySettingsResponse.model_validate(settings),
+        data=_to_response(settings),
         message="Settings updated successfully",
     )
 
