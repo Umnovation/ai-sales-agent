@@ -329,9 +329,7 @@ async def process_message(
     # If bot already responded on this step (attempts > 1), evaluate whether
     # the user's new message satisfies the completion criteria.
     if attempt.attempts > 1:
-        completion: CompletionResult = await evaluate_completion(
-            ai_provider, step, message_history
-        )
+        completion: CompletionResult = await evaluate_completion(ai_provider, step, message_history)
 
         log.info(
             "step_evaluated",
@@ -361,9 +359,7 @@ async def process_message(
             attempt.finish_type = finish_type
             attempt.ai_result = completion.model_dump()
 
-            next_step: FlowScriptStep | None = await route_next_step(
-                db, chat, step, finish_type
-            )
+            next_step: FlowScriptStep | None = await route_next_step(db, chat, step, finish_type)
             if next_step is not None:
                 log.info(
                     "step_routed",

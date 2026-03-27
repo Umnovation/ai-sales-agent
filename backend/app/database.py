@@ -13,9 +13,7 @@ from sqlalchemy.orm import DeclarativeBase
 from app.config import settings
 
 _pool_kwargs: dict[str, int] = (
-    {"pool_size": 10, "max_overflow": 20}
-    if settings.database_url.startswith("postgresql")
-    else {}
+    {"pool_size": 10, "max_overflow": 20} if settings.database_url.startswith("postgresql") else {}
 )
 
 engine: AsyncEngine = create_async_engine(

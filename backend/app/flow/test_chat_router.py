@@ -76,12 +76,14 @@ async def send_test_message(
 
     # Save debug events as system messages (only in test chat)
     for event in proc_result.debug_events:
-        db.add(Message(
-            chat_id=chat_id,
-            sender_type="system",
-            content=event,
-            message_type="debug",
-        ))
+        db.add(
+            Message(
+                chat_id=chat_id,
+                sender_type="system",
+                content=event,
+                message_type="debug",
+            )
+        )
 
     # Save bot response
     if proc_result.response is not None:
