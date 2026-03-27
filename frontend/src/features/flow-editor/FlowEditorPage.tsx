@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, MessageSquare, Settings as SettingsIcon } from "lucide-react";
+import { Plus, MessageSquare } from "lucide-react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { FlowCanvas } from "./components/FlowCanvas";
 import { ScriptPanel } from "./components/panels/ScriptPanel";

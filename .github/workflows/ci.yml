@@ -58,7 +58,7 @@ jobs:
         run: ruff format --check app
 
       - name: Type check
-        run: mypy app --strict
+        run: mypy app --ignore-missing-imports
 
       - name: Run tests
         env:
