@@ -1,0 +1,92 @@
+[project]
+name = "ai-sales-agent"
+version = "0.1.0"
+description = "Open-source AI sales agent with visual flow editor"
+requires-python = ">=3.12"
+dependencies = [
+    # Web framework
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+
+    # Database
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30.0",
+    "alembic>=1.14.0",
+    "pgvector>=0.3.6",
+
+    # Validation & settings
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.7.0",
+    "email-validator>=2.2.0",
+
+    # Task queue
+    "celery[redis]>=5.4.0",
+    "redis>=5.2.0",
+
+    # AI
+    "openai>=1.58.0",
+    "tiktoken>=0.8.0",
+
+    # Auth
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+
+    # Logging
+    "structlog>=24.4.0",
+
+    # Rate limiting
+    "slowapi>=0.1.9",
+
+    # File handling
+    "python-multipart>=0.0.18",
+    "python-docx>=1.1.2",
+    "PyPDF2>=3.0.1",
+
+    # HTTP client (for AI provider health check)
+    "httpx>=0.28.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.25.0",
+    "mypy>=1.13.0",
+    "ruff>=0.8.0",
+    "types-passlib>=1.7.7",
+    "types-python-jose>=3.3.4",
+]
+
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "TCH",  # flake8-type-checking
+    "RUF",  # ruff-specific
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["alembic/"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

@@ -1,0 +1,59 @@
+export interface CompanySettings {
+  readonly id: number;
+  readonly company_name: string;
+  readonly company_description: string | null;
+  readonly ai_provider: string;
+  readonly ai_model: string;
+  readonly created_at: string;
+  readonly updated_at: string;
+}
+
+export interface CompanySettingsUpdate {
+  readonly company_name?: string;
+  readonly company_description?: string | null;
+  readonly ai_provider?: string;
+  readonly ai_model?: string;
+}
+
+export interface Context {
+  readonly id: number;
+  readonly type: "rule" | "restriction";
+  readonly text: string;
+  readonly is_active: boolean;
+  readonly created_at: string;
+  readonly updated_at: string;
+}
+
+export interface ContextCreate {
+  readonly type: "rule" | "restriction";
+  readonly text: string;
+  readonly is_active?: boolean;
+}
+
+export interface ContextUpdate {
+  readonly type?: "rule" | "restriction";
+  readonly text?: string;
+  readonly is_active?: boolean;
+}
+
+export interface DocumentInfo {
+  readonly id: number;
+  readonly filename: string;
+  readonly file_type: string;
+  readonly file_size: number;
+  readonly chunk_count: number;
+  readonly created_at: string;
+  readonly updated_at: string;
+}
+
+export interface AnalyticsSummary {
+  readonly total_chats: number;
+  readonly active_chats: number;
+  readonly completed_chats: number;
+  readonly completion_rate: number;
+}
+
+export interface ConversationDataPoint {
+  readonly date: string;
+  readonly count: number;
+}
