@@ -66,6 +66,13 @@ async def create_script(db: AsyncSession, payload: ScriptCreate) -> FlowScript:
     # Auto-set first script as starting
     if not any(s.is_starting_script for s in flow.scripts):
         data["is_starting_script"] = True
+
+    # Ensure only one starting script
+    if data.get("is_starting_script") is True:
+        for s in flow.scripts:
+            if s.is_starting_script:
+                s.is_starting_script = False
+
     script = FlowScript(flow_id=flow.id, **data)
     db.add(script)
     await db.commit()
@@ -79,6 +86,14 @@ async def update_script(
 ) -> FlowScript:
     script: FlowScript = await get_script_by_id(db, script_id)
     update_data: dict[str, object] = payload.model_dump(exclude_unset=True)
+
+    # Ensure only one starting script
+    if update_data.get("is_starting_script") is True:
+        flow: Flow = await get_flow(db)
+        for s in flow.scripts:
+            if s.id != script_id and s.is_starting_script:
+                s.is_starting_script = False
+
     for field, value in update_data.items():
         setattr(script, field, value)
     await db.commit()
