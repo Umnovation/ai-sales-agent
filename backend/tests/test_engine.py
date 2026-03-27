@@ -2,6 +2,7 @@
 
 These 7 scenarios cover the non-obvious edge cases in the flow engine.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -10,8 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.ai.schemas import CompletionResult, TransitionResult
 from app.chat.models import Chat, ChatFlowStepAttempt, Message
 from app.flow.engine import (
+    ProcessResult,
     check_acceptance_criteria,
-    evaluate_completion,
     process_message,
     resolve_active_step,
     route_next_step,
@@ -102,11 +103,9 @@ async def _create_chat(db: AsyncSession, script_id: int) -> Chat:
 
 
 @pytest.mark.asyncio
-async def test_step_completion_success_routing(
-    db: AsyncSession, mock_ai: MockAIProvider
-) -> None:
+async def test_step_completion_success_routing(db: AsyncSession, mock_ai: MockAIProvider) -> None:
     """When step finishes with success, route to success_step_id."""
-    flow, main_script, _ = await _create_flow_with_scripts(db)
+    _, main_script, _ = await _create_flow_with_scripts(db)
     chat = await _create_chat(db, main_script.id)
 
     steps = sorted(main_script.steps, key=lambda s: s.order)
@@ -123,11 +122,9 @@ async def test_step_completion_success_routing(
 
 
 @pytest.mark.asyncio
-async def test_step_completion_fail_routing(
-    db: AsyncSession, mock_ai: MockAIProvider
-) -> None:
+async def test_step_completion_fail_routing(db: AsyncSession, mock_ai: MockAIProvider) -> None:
     """When step finishes with fail, route to fail_step_id (cross-script)."""
-    flow, main_script, objection_script = await _create_flow_with_scripts(db)
+    _, main_script, objection_script = await _create_flow_with_scripts(db)
     chat = await _create_chat(db, main_script.id)
 
     steps = sorted(main_script.steps, key=lambda s: s.order)
@@ -146,11 +143,9 @@ async def test_step_completion_fail_routing(
 
 
 @pytest.mark.asyncio
-async def test_max_attempts_exceeded(
-    db: AsyncSession, mock_ai: MockAIProvider
-) -> None:
+async def test_max_attempts_exceeded(db: AsyncSession, mock_ai: MockAIProvider) -> None:
     """When attempts >= max_attempts, trigger fail routing even without AI completion."""
-    flow, main_script, _ = await _create_flow_with_scripts(db)
+    _flow, main_script, _ = await _create_flow_with_scripts(db)
     chat = await _create_chat(db, main_script.id)
 
     # Configure mock: step never completes
@@ -158,6 +153,7 @@ async def test_max_attempts_exceeded(
         is_step_finished=False,
         finish_type=None,
         reason="Not completed",
+        extracted_data=None,
     )
 
     # Process 2 messages (max_attempts=2 for step1)
@@ -206,7 +202,9 @@ async def test_acceptance_criteria_triggers_transition(
     )
 
     result = await check_acceptance_criteria(
-        mock_ai, flow, await _create_chat(db, main_script.id),  # type: ignore[arg-type]
+        mock_ai,
+        flow,
+        await _create_chat(db, main_script.id),  # type: ignore[arg-type]
         [{"role": "user", "content": "This is terrible!"}],
     )
 
@@ -233,7 +231,9 @@ async def test_acceptance_criteria_below_threshold(
     )
 
     result = await check_acceptance_criteria(
-        mock_ai, flow, await _create_chat(db, main_script.id),  # type: ignore[arg-type]
+        mock_ai,
+        flow,
+        await _create_chat(db, main_script.id),  # type: ignore[arg-type]
         [{"role": "user", "content": "Hmm not sure"}],
     )
 
@@ -248,16 +248,16 @@ async def test_operator_takeover_prevents_ai_response(
     db: AsyncSession, mock_ai: MockAIProvider
 ) -> None:
     """When operator disables bot, engine should return None and NOT call LLM."""
-    flow, main_script, _ = await _create_flow_with_scripts(db)
+    _flow, main_script, _ = await _create_flow_with_scripts(db)
     chat = await _create_chat(db, main_script.id)
 
     # Disable bot
     chat.is_controlled_by_bot = False
     await db.flush()
 
-    result = await process_message(db, mock_ai, chat.id, "I want to buy")  # type: ignore[arg-type]
+    result: ProcessResult = await process_message(db, mock_ai, chat.id, "I want to buy")  # type: ignore[arg-type]
 
-    assert result is None
+    assert result.response is None
     assert mock_ai.generate_call_count == 0  # LLM never called
 
 
@@ -269,7 +269,7 @@ async def test_resolve_active_step_skips_finished(
     db: AsyncSession, mock_ai: MockAIProvider
 ) -> None:
     """Resolve should return first UNFINISHED step, skipping completed ones."""
-    flow, main_script, _ = await _create_flow_with_scripts(db)
+    _flow, main_script, _ = await _create_flow_with_scripts(db)
     chat = await _create_chat(db, main_script.id)
 
     steps = sorted(main_script.steps, key=lambda s: s.order)

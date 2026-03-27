@@ -1,4 +1,5 @@
 """Tests for auth endpoints."""
+
 from __future__ import annotations
 
 import pytest
@@ -20,9 +21,7 @@ async def test_install_creates_user(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_install_fails_if_user_exists(
-    client: AsyncClient, auth_token: str
-) -> None:
+async def test_install_fails_if_user_exists(client: AsyncClient, auth_token: str) -> None:
     response = await client.post(
         "/api/auth/install",
         json={"email": "second@test.com", "password": "password123", "name": "Second"},

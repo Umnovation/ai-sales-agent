@@ -1,4 +1,5 @@
 """Test fixtures for backend tests."""
+
 from __future__ import annotations
 
 import os
@@ -88,9 +89,7 @@ def mock_ai() -> MockAIProvider:
 
 
 @pytest_asyncio.fixture
-async def client(
-    db: AsyncSession, mock_ai: MockAIProvider
-) -> AsyncGenerator[AsyncClient, None]:
+async def client(db: AsyncSession, mock_ai: MockAIProvider) -> AsyncGenerator[AsyncClient, None]:
     """Provide an HTTP test client with overridden dependencies."""
 
     async def override_get_db() -> AsyncGenerator[AsyncSession, None]:

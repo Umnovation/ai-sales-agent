@@ -1,4 +1,5 @@
 """Tests for flow CRUD endpoints."""
+
 from __future__ import annotations
 
 import pytest
@@ -6,9 +7,7 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_get_flow_creates_default(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_get_flow_creates_default(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     response = await client.get("/api/flow", headers=auth_headers)
     assert response.status_code == 200
 
@@ -19,9 +18,7 @@ async def test_get_flow_creates_default(
 
 
 @pytest.mark.asyncio
-async def test_create_script(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_create_script(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     response = await client.post(
         "/api/flow/scripts",
         headers=auth_headers,
@@ -39,9 +36,7 @@ async def test_create_script(
 
 
 @pytest.mark.asyncio
-async def test_create_step(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_create_step(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     # Create script first
     script_res = await client.post(
         "/api/flow/scripts",
@@ -70,18 +65,12 @@ async def test_create_step(
 
 
 @pytest.mark.asyncio
-async def test_update_step_routing(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_update_step_routing(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     # Create 2 scripts with steps
-    s1_res = await client.post(
-        "/api/flow/scripts", headers=auth_headers, json={"name": "Script 1"}
-    )
+    s1_res = await client.post("/api/flow/scripts", headers=auth_headers, json={"name": "Script 1"})
     s1_id: int = s1_res.json()["data"]["id"]
 
-    s2_res = await client.post(
-        "/api/flow/scripts", headers=auth_headers, json={"name": "Script 2"}
-    )
+    s2_res = await client.post("/api/flow/scripts", headers=auth_headers, json={"name": "Script 2"})
     s2_id: int = s2_res.json()["data"]["id"]
 
     step1_res = await client.post(
@@ -109,9 +98,7 @@ async def test_update_step_routing(
 
 
 @pytest.mark.asyncio
-async def test_get_flow_returns_nested(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_get_flow_returns_nested(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     # Create script + step
     script_res = await client.post(
         "/api/flow/scripts",
@@ -137,9 +124,7 @@ async def test_get_flow_returns_nested(
 
 
 @pytest.mark.asyncio
-async def test_delete_script(
-    client: AsyncClient, auth_headers: dict[str, str]
-) -> None:
+async def test_delete_script(client: AsyncClient, auth_headers: dict[str, str]) -> None:
     script_res = await client.post(
         "/api/flow/scripts",
         headers=auth_headers,
@@ -147,9 +132,7 @@ async def test_delete_script(
     )
     script_id: int = script_res.json()["data"]["id"]
 
-    response = await client.delete(
-        f"/api/flow/scripts/{script_id}", headers=auth_headers
-    )
+    response = await client.delete(f"/api/flow/scripts/{script_id}", headers=auth_headers)
     assert response.status_code == 200
 
     # Verify deleted
