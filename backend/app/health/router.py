@@ -39,7 +39,7 @@ async def health_check(
 
         from app.config import settings
 
-        r = aioredis.from_url(settings.redis_url)
+        r = aioredis.from_url(settings.redis_url)  # type: ignore[no-untyped-call]
         await r.ping()
         await r.aclose()
         checks["redis"] = ComponentHealth(status="ok")

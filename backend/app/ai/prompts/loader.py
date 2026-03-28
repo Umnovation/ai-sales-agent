@@ -27,8 +27,11 @@ def load_prompt(name: str, variables: dict[str, str] | None = None) -> str:
         msg: str = f"Prompt template not found: {file_path}"
         raise FileNotFoundError(msg)
 
-    tree: ET.ElementTree = ET.parse(file_path)
-    root: ET.Element = tree.getroot()
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+    if root is None:
+        msg = f"Empty XML prompt template: {file_path}"
+        raise ValueError(msg)
 
     parts: list[str] = []
     for section in root:

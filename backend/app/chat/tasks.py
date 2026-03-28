@@ -15,7 +15,7 @@ class AIProviderError(Exception):
     """Raised when AI provider call fails."""
 
 
-@celery_app.task(
+@celery_app.task(  # type: ignore[untyped-decorator]
     bind=True,
     max_retries=3,
     autoretry_for=(AIProviderError, ConnectionError),
@@ -23,7 +23,7 @@ class AIProviderError(Exception):
     retry_backoff_max=30,
     retry_jitter=True,
 )
-def process_ai_response(self: object, chat_id: int, message_id: int) -> None:  # type: ignore[override]
+def process_ai_response(self: object, chat_id: int, message_id: int) -> None:
     """Process incoming message and generate AI response.
 
     Runs the full FSM engine cycle within a transaction.
@@ -32,23 +32,35 @@ def process_ai_response(self: object, chat_id: int, message_id: int) -> None:  #
 
 
 async def _process_ai_response_async(chat_id: int, message_id: int) -> None:
+    from sqlalchemy import select
+
     from app.ai.providers.openai_provider import OpenAIProvider
     from app.chat.models import Message
     from app.chat.service import save_message
     from app.chat.ws_manager import ws_manager
     from app.database import async_session_factory
     from app.flow.engine import ProcessResult, process_message
+    from app.settings.models import CompanySettings
 
     log = logger.bind(chat_id=chat_id, message_id=message_id)
     log.info("processing_ai_response")
 
-    ai_provider = OpenAIProvider()
-
     async with async_session_factory() as db:
         async with db.begin():
-            # Get the user message content
-            from sqlalchemy import select
+            # Load AI configuration from settings
+            settings_result = await db.execute(select(CompanySettings).limit(1))
+            cs: CompanySettings | None = settings_result.scalar_one_or_none()
+            if cs is None or not cs.ai_api_key:
+                log.error("ai_not_configured")
+                return
 
+            ai_provider = OpenAIProvider(
+                api_key=cs.ai_api_key,
+                model=cs.ai_model,
+                embedding_model=cs.ai_embedding_model,
+            )
+
+            # Get the user message content
             msg_result = await db.execute(select(Message).where(Message.id == message_id))
             user_message: Message | None = msg_result.scalar_one_or_none()
 
@@ -90,7 +102,7 @@ async def _process_ai_response_async(chat_id: int, message_id: int) -> None:
         )
 
 
-@celery_app.task
+@celery_app.task  # type: ignore[untyped-decorator]
 def on_ai_response_failure(
     request: object,
     exc: Exception,

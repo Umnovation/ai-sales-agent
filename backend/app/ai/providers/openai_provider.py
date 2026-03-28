@@ -70,9 +70,9 @@ class OpenAIProvider:
         ]
 
         start: float = time.monotonic()
-        response = await self._client.chat.completions.create(
+        response = await self._client.chat.completions.create(  # type: ignore[call-overload]
             model=self._model,
-            messages=all_messages,  # type: ignore[arg-type]
+            messages=all_messages,
             temperature=temperature,
             response_format={
                 "type": "json_schema",

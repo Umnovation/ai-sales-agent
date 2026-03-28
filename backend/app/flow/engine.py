@@ -100,7 +100,7 @@ async def resolve_active_step(
     steps: list[FlowScriptStep] = list(result.scalars().all())
 
     for step in steps:
-        attempt: ChatFlowStepAttempt | None = await _get_or_create_attempt(db, chat.id, step.id)
+        attempt: ChatFlowStepAttempt = await _get_or_create_attempt(db, chat.id, step.id)
         if not attempt.is_finished:
             return step
 

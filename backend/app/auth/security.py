@@ -40,6 +40,8 @@ def decode_access_token(token: str) -> int | None:
         user_id: object = payload.get("sub")
         if user_id is None:
             return None
-        return int(user_id)  # type: ignore[arg-type]
+        if not isinstance(user_id, (str, int)):
+            return None
+        return int(user_id)
     except JWTError:
         return None
