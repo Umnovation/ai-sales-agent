@@ -58,14 +58,13 @@ jobs:
         run: ruff format --check app
 
       - name: Type check
-        run: mypy app --ignore-missing-imports || true  # TODO: fix mypy errors incrementally
+        run: mypy app --ignore-missing-imports
 
       - name: Run tests
         env:
           DATABASE_URL: sqlite+aiosqlite:///./test.db
           REDIS_URL: redis://localhost:6379/0
           APP_SECRET_KEY: test-secret-key
-          OPENAI_API_KEY: sk-test
           CELERY_BROKER_URL: redis://localhost:6379/1
           CELERY_RESULT_BACKEND: redis://localhost:6379/2
         run: pytest -v
