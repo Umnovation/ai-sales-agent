@@ -99,7 +99,7 @@ async def send_test_message(
 
     # Reload messages
     msg_result = await db.execute(
-        select(Message).where(Message.chat_id == chat_id).order_by(Message.created_at)
+        select(Message).where(Message.chat_id == chat_id).order_by(Message.created_at, Message.id)
     )
     messages: list[Message] = list(msg_result.scalars().all())
 

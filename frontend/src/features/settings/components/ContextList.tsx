@@ -138,7 +138,7 @@ export function ContextList({
             <span className="text-[15px] font-semibold text-[var(--app-font-primary)]">
               Rules
             </span>
-            <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--app-accent-left)] px-1.5 text-[10px] font-semibold text-white">
+            <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--app-accent-left)] px-2 text-[10px] font-semibold text-white">
               {rules.length}
             </span>
           </div>
@@ -183,7 +183,7 @@ export function ContextList({
             <span className="text-[15px] font-semibold text-[var(--app-font-primary)]">
               Restrictions
             </span>
-            <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--app-error)] px-1.5 text-[10px] font-semibold text-white">
+            <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--app-error)] px-2 text-[10px] font-semibold text-white">
               {restrictions.length}
             </span>
           </div>

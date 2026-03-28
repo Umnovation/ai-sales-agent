@@ -62,7 +62,7 @@ export function ScriptPanel({
   async function handleDelete(): Promise<void> {
     try {
       await onDelete(script.id);
-      toast.success("Script deleted");
+      // silent success — node removed from canvas is sufficient feedback
     } catch {
       toast.error("Failed to delete script");
     }

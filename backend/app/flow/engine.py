@@ -117,17 +117,20 @@ async def execute_step(
     rag_context: str = "",
 ) -> str:
     """Generate AI response for the current step."""
-    rules: str = (
-        "\n".join(f"- {c.text}" for c in contexts if c.type == "rule" and c.is_active)
-        or "No specific rules."
+
+    prompt: str = fill_step_prompt(company_settings, step, contexts, rag_context)
+
+    response: str = await ai_provider.generate(
+        messages=message_history,
+        system_prompt=prompt,
     )
 
-    restrictions: str = (
-        "\n".join(f"- {c.text}" for c in contexts if c.type == "restriction" and c.is_active)
-        or "No specific restrictions."
-    )
+    return response
 
-    prompt: str = load_prompt(
+def fill_step_prompt(company_settings: CompanySettings, step: FlowScriptStep, contexts: list[Context], rag_context: str = "") -> str:
+    rules: str = generate_context(contexts, "rule")
+    restrictions: str = generate_context(contexts, "restriction")
+    return load_prompt(
         "generate_response",
         {
             "company_name": company_settings.company_name,
@@ -141,15 +144,10 @@ async def execute_step(
             "restrictions": restrictions,
             "rag_context": rag_context or "No additional knowledge base context.",
         },
-    )
+    )   
 
-    response: str = await ai_provider.generate(
-        messages=message_history,
-        system_prompt=prompt,
-    )
-
-    return response
-
+def generate_context(contexts: List[Context], type: str) -> str:
+    return "\n".join(f"- {c.text}" for c in contexts if c.type == type and c.is_active) or f"No specific {type}s."
 
 async def evaluate_completion(
     ai_provider: AIProvider,
@@ -268,7 +266,7 @@ async def process_message(
     msg_result = await db.execute(
         select(Message)
         .where(Message.chat_id == chat_id, Message.message_type == "text")
-        .order_by(Message.created_at)
+        .order_by(Message.created_at, Message.id)
     )
     db_messages: list[Message] = list(msg_result.scalars().all())
 

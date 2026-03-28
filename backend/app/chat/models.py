@@ -47,7 +47,7 @@ class Chat(Base):
         "Message",
         back_populates="chat",
         cascade="all, delete-orphan",
-        order_by="Message.created_at",
+        order_by="Message.created_at, Message.id",
     )
     step_attempts: Mapped[list[ChatFlowStepAttempt]] = relationship(
         "ChatFlowStepAttempt",
