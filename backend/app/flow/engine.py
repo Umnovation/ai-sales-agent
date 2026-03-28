@@ -127,9 +127,16 @@ async def execute_step(
 
     return response
 
-def fill_step_prompt(company_settings: CompanySettings, step: FlowScriptStep, contexts: list[Context], rag_context: str = "") -> str:
-    rules: str = generate_context(contexts, "rule")
-    restrictions: str = generate_context(contexts, "restriction")
+
+def fill_step_prompt(
+    company_settings: CompanySettings,
+    step: FlowScriptStep,
+    contexts: list[Context],
+    rag_context: str = "",
+) -> str:
+    """Build the system prompt for a step using company settings and contexts."""
+    rules: str = _format_contexts(contexts, "rule")
+    restrictions: str = _format_contexts(contexts, "restriction")
     return load_prompt(
         "generate_response",
         {
@@ -144,10 +151,16 @@ def fill_step_prompt(company_settings: CompanySettings, step: FlowScriptStep, co
             "restrictions": restrictions,
             "rag_context": rag_context or "No additional knowledge base context.",
         },
-    )   
+    )
 
-def generate_context(contexts: List[Context], type: str) -> str:
-    return "\n".join(f"- {c.text}" for c in contexts if c.type == type and c.is_active) or f"No specific {type}s."
+
+def _format_contexts(contexts: list[Context], context_type: str) -> str:
+    """Format active contexts of a given type into a bullet list."""
+    items: str = "\n".join(
+        f"- {c.text}" for c in contexts if c.type == context_type and c.is_active
+    )
+    return items or f"No specific {context_type}s."
+
 
 async def evaluate_completion(
     ai_provider: AIProvider,

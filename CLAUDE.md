@@ -140,6 +140,18 @@ STRICT TYPING. Zero tolerance for `any`.
 - Error messages must be descriptive and actionable
 - Every API endpoint must have Pydantic request/response schemas (backend) and TypeScript types (frontend)
 
+### Pre-commit / Pre-push Checklist
+
+**NEVER commit or push without verifying ALL checks pass first.** Run these inside Docker:
+
+```bash
+docker compose exec backend ruff check app        # lint
+docker compose exec backend ruff format --check app  # format
+docker compose exec backend python -m pytest tests/ -v  # tests
+```
+
+All three MUST be green before `git commit`. No exceptions. Do not push broken CI — fixing lint in follow-up commits clutters the history.
+
 ## Commands
 
 ```bash
